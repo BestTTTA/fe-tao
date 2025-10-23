@@ -1,7 +1,7 @@
 // app/reading/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 import { createClient } from "@/utils/supabase/client";
@@ -36,6 +36,47 @@ type Profile = {
 const mapSpreadId = (id: string) => (id === "12-circle" ? "12circle" : `${id}-card`);
 
 export default function ReadingSelectPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="relative min-h-screen">
+          <TransparentHeader
+            title="เปิดไพ่"
+            subtitle=""
+            routeRules={{
+              "/reading": {
+                showLogo: false, showSearch: false, showMenu: false,
+                showBack: true, backPath: "/opencard",
+              },
+            }}
+          />
+          <section
+            className="relative h-[120px] w-full overflow-hidden"
+            style={{ backgroundImage: "url('/hero-stars.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
+          />
+          <div className="relative -mt-14 mx-auto max-w-md px-4 pb-24 text-white">
+            {/* skeleton ขณะโหลด search params */}
+            <div className="mt-4 space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex w-full items-stretch gap-3 rounded-3xl bg-white/10 p-3 ring-1 ring-white/15">
+                  <div className="h-[84px] w-[84px] rounded-2xl bg-white/15 animate-pulse" />
+                  <div className="flex-1">
+                    <div className="h-4 w-40 rounded bg-white/20 animate-pulse" />
+                    <div className="mt-2 h-3 w-56 rounded bg-white/10 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <ReadingContent />
+    </Suspense>
+  );
+}
+
+function ReadingContent() {
   const router = useRouter();
   const params = useSearchParams();
   const deckId = params.get("deck") ?? "";

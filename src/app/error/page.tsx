@@ -1,22 +1,37 @@
 'use client'
 
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 export default function ErrorPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="relative min-h-screen bg-gradient-to-b from-slate-900 via-violet-900/40 to-slate-950 text-white">
+          <div className="mx-auto max-w-md px-4 pt-28 pb-24">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur">
+              <div className="mx-auto mb-4 h-6 w-24 animate-pulse rounded bg-white/20" />
+              <div className="h-4 w-full animate-pulse rounded bg-white/10" />
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <ErrorContent />
+    </Suspense>
+  )
+}
+
+function ErrorContent() {
   const sp = useSearchParams()
   const code = sp.get('code') || ''
   const message = sp.get('message') || ''
 
-  // สรุปข้อความที่จะโชว์ (fallback ถ้าไม่มี message)
-  const display =
-    message ||
-    'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
+  const display = message || 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
 
-  // กรณี “ไม่พบผู้ใช้/รหัสผ่านผิด” ให้แสดงปุ่มไป Register
   const isInvalidCred =
-    code === 'auth_invalid_credentials' ||
-    code === 'auth_user_not_found'
+    code === 'auth_invalid_credentials' || code === 'auth_user_not_found'
 
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-slate-900 via-violet-900/40 to-slate-950 text-white">
@@ -33,9 +48,7 @@ export default function ErrorPage() {
             เกิดข้อผิดพลาด
           </h1>
 
-          <p className="mt-2 text-center text-white/80">
-            {display}
-          </p>
+          <p className="mt-2 text-center text-white/80">{display}</p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Link
@@ -55,7 +68,6 @@ export default function ErrorPage() {
             )}
           </div>
 
-          {/* โชว์ code (เพื่อดีบักเบา ๆ), ซ่อนไว้จากผู้ใช้ทั่วไปก็ได้ */}
           {code && (
             <p className="mt-4 text-center text-xs text-white/50">
               รหัสข้อผิดพลาด: <code>{code}</code>

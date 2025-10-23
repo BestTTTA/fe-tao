@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     siteName: "Tarot Oracle",
     images: [
       {
-        url: "https://devtarotoracle.vercel.app/banner.png",
+        url: "https://devtarotoracle.vercel.app/banner/banner.png",
         width: 1200,
         height: 630,
         alt: "Tarot Oracle - รัวรับสับเปิด",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tarot Oracle",
     description: "การเริ่มต้นใหม่, การผจญภัย, และความไร้เดียงสา ซึ่งอาจจะมีความเสี่ยงแต่ก็เต็มไปด้วยโอกาสใหม่ๆ ไพ่ใบนี้ยังสื่อถึงการมองโลกในแง่ดี, ความกล้าที่จะลองผิดลองถูก, และการเปิดใจรับสิ่งใหม่ๆ",
-    images: ["https://devtarotoracle.vercel.app/banner.png"],
+    images: ["https://devtarotoracle.vercel.app/banner/banner.png"],
     creator: "@tarotoracle",
   },
   alternates: {

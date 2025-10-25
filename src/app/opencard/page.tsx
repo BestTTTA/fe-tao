@@ -40,14 +40,14 @@ export default function OpenCardPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [planType, setPlanType] = useState<PlanType>("FREE");
 
-  // โหลด decks + user + favorites
+  // โหลด decks + user + favorites + plan_type
   useEffect(() => {
     let mounted = true;
 
     (async () => {
       setLoading(true);
 
-      // 1) ดึง deck ทั้งหมด
+      // 1) โหลด deck ทั้งหมด
       const { data: deckRows, error: deckErr } = await supabase
         .from("decks")
         .select("id, deck_name, deck_url, free")
@@ -67,7 +67,7 @@ export default function OpenCardPage() {
         setDecks(vm);
       }
 
-      // 2) ตรวจ user
+      // 2) ดึง user
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id ?? null;
       setUserId(uid);
@@ -93,6 +93,8 @@ export default function OpenCardPage() {
 
         if (profile?.plan_type) {
           setPlanType(profile.plan_type as PlanType);
+        } else {
+          setPlanType("FREE");
         }
       } else {
         setFavDeckIds(new Set());
@@ -130,12 +132,16 @@ export default function OpenCardPage() {
           .delete()
           .eq("profile_id", userId)
           .eq("deck_id", deckId);
-        if (error) setFavDeckIds((prev) => new Set(prev).add(deckId));
+        if (error) {
+          // rollback
+          setFavDeckIds((prev) => new Set(prev).add(deckId));
+        }
       } else {
         const { error } = await supabase
           .from("favorites")
           .insert({ profile_id: userId, deck_id: deckId });
         if (error) {
+          // rollback
           setFavDeckIds((prev) => {
             const next = new Set(prev);
             next.delete(deckId);
@@ -151,6 +157,58 @@ export default function OpenCardPage() {
     const list = decks.map((d) => ({ ...d, favorite: favDeckIds.has(d.id) }));
     return tab === "fav" ? list.filter((d) => d.favorite) : list;
   }, [tab, decks, favDeckIds]);
+
+  // ✅ ใหม่: handler ตอนกด "ดูดวง"
+  // ขั้นตอน:
+  // - ถ้า deck VIP แต่ user ยัง FREE -> บล็อกทันที (frontend)
+  // - มิฉะนั้นยิง fetch ไปที่ /api/decks/[deckId]/open
+  //   ซึ่งจะ:
+  //     - verify plan active
+  //     - เช็คโควต้า MONTH 20 ครั้ง/วัน
+  //     - insert card_draw_logs ถ้า allow
+  //     - คืน 200 + deck data ถ้า ok
+  // - ถ้า response.ok → ไปหน้า reading
+  // - ถ้าไม่ → alert ข้อความ error ที่ API ส่งมา
+  const handleReadClick = useCallback(
+    async (deckId: number, vipOnly: boolean) => {
+      // ยังไม่ล็อกอิน
+      if (!userId) {
+        alert("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+        return;
+      }
+
+      // deck VIP แต่ user ยัง FREE → ไม่ต้องยิง API เลย
+      if (vipOnly && planType === "FREE") {
+        alert("สำรับนี้สำหรับสมาชิกเท่านั้น");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/decks/${deckId}/open`, {
+          method: "GET",
+        });
+
+        if (res.ok) {
+          // ผ่านเช็คทั้งหมด ทั้ง active plan และ quota
+          // → เข้าอ่านได้เลย
+          // (เรายังใส่ ?deck=... ไว้เหมือนเดิมเพื่อให้หน้า reading โหลดสำรับนั้น)
+          router.push(`/reading?deck=${deckId}`);
+          return;
+        }
+
+        // ถ้า status ไม่ใช่ 2xx:
+        // พยายามอ่าน text เพื่อโชว์ message จาก server เช่น:
+        // "Your plan is inactive or expired." หรือ
+        // "Daily limit reached. You used 20 / 20 today."
+        const msg = await res.text();
+        alert(msg || "ไม่สามารถเปิดสำรับได้ในขณะนี้");
+      } catch (err) {
+        console.error("open deck failed", err);
+        alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+      }
+    },
+    [router, userId, planType],
+  );
 
   return (
     <main className="relative min-h-screen">
@@ -170,11 +228,7 @@ export default function OpenCardPage() {
 
       <section
         className="relative h-[130px] w-full overflow-hidden"
-        style={{
-          backgroundImage: "url('/hero-stars.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+
       >
         <div className="absolute inset-0 " />
       </section>
@@ -238,7 +292,7 @@ export default function OpenCardPage() {
                 isFav={favDeckIds.has(d.id)}
                 onToggleFav={() => toggleFav(d.id)}
                 onInfo={() => router.push(`/decks/${d.id}`)}
-                onRead={() => router.push(`/reading?deck=${d.id}`)}
+                onRead={() => handleReadClick(d.id, d.vipOnly)}
                 planType={planType}
               />
             ))}
@@ -271,8 +325,13 @@ function DeckCard({
   onInfo: () => void;
   planType: "FREE" | "MONTH" | "YEAR";
 }) {
-  // ✅ เฉพาะผู้ใช้ FREE เท่านั้นที่ห้ามเปิด VIP
+  // disabled เฉพาะเคสพื้นฐาน: user FREE แต่สำรับ VIP
+  // สำหรับ MONTH quota เต็ม / plan inactive เราจะปล่อยให้คลิกได้
+  // แล้ว backend จะเป็นคนตอบกลับด้วย status 429/403
   const disabled = deck.vipOnly && planType === "FREE";
+
+  const buttonLabel =
+    deck.vipOnly && planType === "FREE" ? "VIP Only" : "ดูดวง";
 
   return (
     <div className="overflow-hidden rounded-2xl bg-white/95 p-2 text-slate-900 shadow ring-1 ring-black/5 backdrop-blur">
@@ -291,6 +350,13 @@ function DeckCard({
         >
           {isFav ? <HeartSolid /> : <Heart />}
         </button>
+
+        {/* badge VIP */}
+        {deck.vipOnly && (
+          <div className="absolute left-2 top-2 rounded-lg bg-black/70 px-2 py-1 text-[10px] font-semibold text-white shadow">
+            VIP
+          </div>
+        )}
       </div>
 
       <div className="mt-2">
@@ -313,7 +379,7 @@ function DeckCard({
                 : "bg-botton-main hover:bg-violet-800"
             }`}
           >
-            {deck.vipOnly && planType === "FREE" ? "VIP Only" : "ดูดวง"}
+            {buttonLabel}
           </button>
         </div>
       </div>

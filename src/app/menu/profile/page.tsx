@@ -10,7 +10,7 @@ type UserProfile = {
   plan_type: string;
   stripe_customer_id?: string;
   full_name: string;
-  nickname?: string;
+  nick_name?: string;
   phone?: string;
   email: string;
   address?: string;
@@ -128,11 +128,7 @@ export default function AccountProfilePage() {
       {/* พื้นหลัง hero */}
       <section
         className="relative h-[210px] w-full overflow-hidden"
-        style={{
-          backgroundImage: "url('/hero-stars.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+
       />
 
       {/* เนื้อหา */}
@@ -144,7 +140,7 @@ export default function AccountProfilePage() {
           <div className="mb-4 flex flex-col items-center">
             <div className="relative">
               <img
-                src={user.avatar_url ?? "/images/avatar-placeholder.jpg"}
+                src={user.avatar_url ?? "/avatar.png"}
                 alt="avatar"
                 className="h-24 w-24 rounded-full object-cover border border-slate-200"
               />
@@ -197,7 +193,7 @@ export default function AccountProfilePage() {
           {/* รายละเอียด */}
           <Field label="รหัสลูกค้า (Stripe)" value={user.stripe_customer_id ?? "-"} />
           <Field label="ชื่อ-นามสกุล" value={user.full_name ?? "-"} />
-          <Field label="ชื่อเล่น" value={user.nickname ?? "-"} />
+          <Field label="ชื่อเล่น" value={user.nick_name ?? "-"} />
           <Field label="เบอร์โทรศัพท์" value={user.phone ?? "-"} />
           <Field label="อีเมล" value={user.email ?? "-"} isEmail />
           <Field label="ที่อยู่" value={user.address ?? "-"} multiline />

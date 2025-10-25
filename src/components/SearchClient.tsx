@@ -199,11 +199,6 @@ export default function SearchClient() {
       {/* BG */}
       <section
         className="relative h-[210px] w-full overflow-hidden"
-        style={{
-          backgroundImage: "url('/hero-stars.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
       >
         <div className="absolute inset-0 " />
       </section>

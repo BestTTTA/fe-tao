@@ -36,8 +36,7 @@ export default function ReadingQuestionPage() {
 
       <section
         className="absolute inset-0 -z-10"
-        style={{ backgroundImage: "url('/hero-stars.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
-      />
+ />
 
       <div className="px-4 pt-20 pb-28 w-full">
         <label className="block text-sm font-semibold text-white/90">ระบุเรื่องที่ต้องการดูดวง</label>

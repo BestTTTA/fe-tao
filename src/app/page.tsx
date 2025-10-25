@@ -15,11 +15,6 @@ export default function Home() {
       {/* HERO + Header โปร่ง */}
       <section
         className="relative h-[100px] w-full overflow-hidden"
-        style={{
-          backgroundImage: "url('/hero-stars.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
       >
         <div className="absolute inset-0 " />
         <TransparentHeader title="TAROT" subtitle="& ORACLE" />

@@ -130,8 +130,7 @@ export default function ReadingResultPage() {
         />
         <section
           className="relative h-[140px] w-full overflow-hidden"
-          style={{ backgroundImage: "url('/hero-stars.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
-        />
+/>
         <div className="relative -mt-14 mx-auto max-w-md px-4 pb-28">
           <div className="flex gap-3">
             {Array.from({ length: 2 }).map((_, i) => (
@@ -176,8 +175,7 @@ export default function ReadingResultPage() {
 
       <section
         className="relative h-[140px] w-full overflow-hidden"
-        style={{ backgroundImage: "url('/hero-stars.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
-      />
+  />
 
       <div className="relative -mt-14 mx-auto max-w-md px-4 pb-28">
         {/* รูปใหญ่ 2 ใบแรก */}

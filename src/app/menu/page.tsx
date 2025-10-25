@@ -31,11 +31,7 @@ export default function MenuPage() {
 
       <section
         className="relative h-[210px] w-full overflow-hidden"
-        style={{
-          backgroundImage: "url('/hero-stars.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+
       />
 
       <div className="relative -mt-16 mx-auto max-w-md px-4 pb-[120px] space-y-5">

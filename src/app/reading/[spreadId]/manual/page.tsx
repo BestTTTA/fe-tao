@@ -98,11 +98,6 @@ export default function ManualShufflePage() {
       {/* BG */}
       <section
         className="relative h-[100px] sm:h-[120px] w-full overflow-hidden"
-        style={{
-          backgroundImage: "url('/hero-stars.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
       />
 
       {/* Content Container - ใช้ flex เพื่อจัดกลางจอ */}

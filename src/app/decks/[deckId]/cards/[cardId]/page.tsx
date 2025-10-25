@@ -105,7 +105,6 @@ export default async function CardDetailPage(props: {
 
   if (!card) return notFound();
 
-  // ✅ กันรูปหาย: hero-stars.jpg ควรมีใน /public; ถ้าไม่มี จะยังเห็น BG ขาว
   return (
     <main className="relative min-h-screen text-white">
       <TransparentHeader
@@ -125,11 +124,6 @@ export default async function CardDetailPage(props: {
 
       <section
         className="relative h-[180px] w-full overflow-hidden"
-        style={{
-          backgroundImage: "url('/hero-stars.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
       >
         <div className="absolute inset-0" />
       </section>

@@ -52,8 +52,7 @@ export default function ReadingSelectPage() {
           />
           <section
             className="relative h-[120px] w-full overflow-hidden"
-            style={{ backgroundImage: "url('/hero-stars.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
-          />
+  />
           <div className="relative -mt-14 mx-auto max-w-md px-4 pb-24 text-white">
             {/* skeleton ขณะโหลด search params */}
             <div className="mt-4 space-y-3">
@@ -146,8 +145,7 @@ function ReadingContent() {
 
       <section
         className="relative h-[120px] w-full overflow-hidden"
-        style={{ backgroundImage: "url('/hero-stars.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
-      >
+ >
         <div className="absolute inset-0" />
       </section>
 

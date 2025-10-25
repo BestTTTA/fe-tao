@@ -184,11 +184,7 @@ export default function VipPackagesPage() {
       {/* พื้นหลัง */}
       <section
         className="relative h-[220px] w-full overflow-hidden"
-        style={{
-          backgroundImage: "url('/hero-stars.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+
       />
 
       {/* เนื้อหา */}

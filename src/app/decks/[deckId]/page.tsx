@@ -74,7 +74,7 @@ export default async function DeckDetailPage({
   }
 
   return (
-    <main className="min-h-screen bg-[url('/hero-stars.jpg')] bg-cover bg-center text-white">
+    <main className="min-h-screen text-white">
       <div className="mx-auto max-w-md px-4 pb-24 pt-6">
         {/* Header */}
         <div className="mb-4 flex items-center gap-3 justify-center">

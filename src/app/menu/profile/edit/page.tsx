@@ -201,11 +201,7 @@ export default function EditProfilePage() {
 
       <section
         className="relative h-[210px] w-full overflow-hidden"
-        style={{
-          backgroundImage: "url('/hero-stars.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+
       />
 
       <form

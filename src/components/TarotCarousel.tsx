@@ -1,16 +1,22 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 
 type Promotion = {
   id: number;
   banner_url: string | null;
   head: string | null;
   detail: string | null;
+  // ถ้าภายหลังคุณมีคอลัมน์ route_url ใน promotions
+  // route_url?: string | null;
 };
 
 type Props = {
-  images?: string[]; // 👈 รองรับ list URL
+  images?: string[]; // 👈 list URL ของรูป (ลำดับคือสไลด์)
+  links?: (string | null)[]; // 👈 path สำหรับแต่ละสไลด์ เช่น ['/promo/1','/promo/2',null]
+  enableLink?: boolean; // 👈 เปิด/ปิดการกดแล้ว navigate ทั้งหมด (default true)
+
   autoPlay?: boolean;
   interval?: number;
   className?: string;
@@ -20,6 +26,8 @@ type Props = {
 
 export default function TarotCarousel({
   images,
+  links,
+  enableLink = true,
   autoPlay = true,
   interval = 4000,
   className = "",
@@ -27,43 +35,68 @@ export default function TarotCarousel({
   height = 220,
 }: Props) {
   const supabase = createClient();
+  const router = useRouter();
 
   // ภาพที่ใช้จริง (มาจาก props หรือดึงจาก DB)
   const [slides, setSlides] = useState<string[]>([]);
+  // เก็บลิงก์ของสไลด์ในรูปแบบอาร์เรย์ index ตรงกับ slides
+  const [slideLinks, setSlideLinks] = useState<(string | null)[]>([]);
+
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // เตรียม slides
+  // เตรียม slides จาก props หรือ promotions
   useEffect(() => {
     let mounted = true;
 
-    // ถ้ามี images ที่ส่งเข้ามา ให้ใช้ทันที
+    // ถ้ามี images จาก props → ใช้เลย
     if (images && images.length > 0) {
-      setSlides(images.filter(Boolean));
+      const cleanImgs = images.filter(Boolean) as string[];
+      setSlides(cleanImgs);
+
+      // map links ตาม index ของ images
+      if (links && links.length > 0) {
+        // ถ้ามี links ที่ส่งมา เราจะ align ตาม index
+        const alignedLinks = cleanImgs.map((_, i) => links[i] ?? null);
+        setSlideLinks(alignedLinks);
+      } else {
+        // ไม่มี links จาก props → ใส่ null หมด (ไม่ navigate)
+        setSlideLinks(cleanImgs.map(() => null));
+      }
+
       setIndex(0);
       setLoading(false);
       return;
     }
 
-    // ไม่ได้ส่ง images → ดึง promotions
+    // ไม่มี images → ดึง promotions จาก DB เป็น fallback
     (async () => {
       setLoading(true);
+
       const { data, error } = await supabase
         .from("promotions")
-        .select("banner_url")
+        .select("banner_url") // ถ้าอยากมีลิงก์ในอนาคต: เพิ่มคอลัมน์ route_url แล้ว select มาด้วย
         .order("created_at", { ascending: false })
         .limit(limit);
 
       if (!mounted) return;
 
       if (!error && data) {
-        setSlides(
-          data.map((d) => d.banner_url).filter((u): u is string => !!u),
-        );
+        // ดึงรูป
+        const promoSlides = data
+          .map((d) => d.banner_url)
+          .filter((u): u is string => !!u);
+
+        setSlides(promoSlides);
+
+        // fallback promotions ตอนนี้ยังไม่มี path → ใส่ null
+        setSlideLinks(promoSlides.map(() => null));
       } else {
         setSlides([]);
+        setSlideLinks([]);
       }
+
       setIndex(0);
       setLoading(false);
     })();
@@ -71,16 +104,18 @@ export default function TarotCarousel({
     return () => {
       mounted = false;
     };
-  }, [images, limit, supabase]);
+  }, [images, links, limit, supabase]);
 
   // autoplay
   useEffect(() => {
     if (!autoPlay || loading || slides.length <= 1) return;
     if (timer.current) clearTimeout(timer.current);
+
     timer.current = setTimeout(
       () => setIndex((i) => (i + 1) % slides.length),
       interval,
     );
+
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
@@ -89,15 +124,20 @@ export default function TarotCarousel({
   // swipe / drag
   const startX = useRef(0);
   const deltaX = useRef(0);
+
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     startX.current = e.clientX;
     deltaX.current = 0;
     (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
     if (timer.current) clearTimeout(timer.current);
   };
+
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (startX.current) deltaX.current = e.clientX - startX.current;
+    if (startX.current) {
+      deltaX.current = e.clientX - startX.current;
+    }
   };
+
   const onPointerUp = () => {
     const threshold = 60;
     if (deltaX.current > threshold) prev();
@@ -106,9 +146,25 @@ export default function TarotCarousel({
     deltaX.current = 0;
   };
 
-  const prev = () => setIndex((i) => (i - 1 + slides.length) % slides.length);
-  const next = () => setIndex((i) => (i + 1) % slides.length);
+  const prev = () => {
+    setIndex((i) => (i - 1 + slides.length) % slides.length);
+  };
+  const next = () => {
+    setIndex((i) => (i + 1) % slides.length);
+  };
 
+  // click handler ของแต่ละสไลด์
+  const handleSlideClick = (slideIdx: number) => {
+    // ปิดการนำทางทั้งหมด?
+    if (!enableLink) return;
+
+    const href = slideLinks[slideIdx];
+    if (!href) return; // สไลด์นี้ไม่มีลิงก์ → ไม่ไปไหน
+
+    router.push(href);
+  };
+
+  // render
   if (loading) {
     return (
       <div className={`relative mx-auto w-[310px] sm:w-[360px] ${className}`}>
@@ -116,6 +172,7 @@ export default function TarotCarousel({
       </div>
     );
   }
+
   if (slides.length === 0) return null;
 
   return (
@@ -135,7 +192,12 @@ export default function TarotCarousel({
           {slides.map((src, i) => (
             <div
               key={`${src}-${i}`}
-              className="relative h-full w-full flex-[0_0_100%]"
+              className={`relative h-full w-full flex-[0_0_100%] ${
+                enableLink && slideLinks[i]
+                  ? "cursor-pointer"
+                  : "cursor-default"
+              }`}
+              onClick={() => handleSlideClick(i)}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -152,6 +214,7 @@ export default function TarotCarousel({
 
       {slides.length > 1 && (
         <>
+          {/* prev / next arrows */}
           <button
             onClick={prev}
             aria-label="Previous"
@@ -170,6 +233,7 @@ export default function TarotCarousel({
               <path d="m15 18-6-6 6-6" />
             </svg>
           </button>
+
           <button
             onClick={next}
             aria-label="Next"
@@ -188,13 +252,17 @@ export default function TarotCarousel({
               <path d="m9 18 6-6-6-6" />
             </svg>
           </button>
+
+          {/* dots */}
           <div className="mt-2 flex items-center justify-center gap-2">
             {slides.map((_, i) => (
               <button
                 key={i}
                 aria-label={`Go to slide ${i + 1}`}
                 onClick={() => setIndex(i)}
-                className={`h-1.5 rounded-full transition-all ${i === index ? "w-6 bg-white" : "w-1.5 bg-white/50"}`}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === index ? "w-6 bg-white" : "w-1.5 bg-white/50"
+                }`}
               />
             ))}
           </div>

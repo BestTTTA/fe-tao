@@ -24,7 +24,12 @@ export default function Home() {
       <div className="mx-auto max-w-2xl space-y-8 px-4 pt-6">
         {/* Carousel */}
         <div className="flex justify-center">
-          <TarotCarousel />
+          <TarotCarousel
+            images={["/banner/banner.png"]}
+            links={["/packages"]}
+            enableLink={true}
+          />
+
         </div>
 
         {/* ✅ Deck ฟรีเฉพาะสมาชิก */}

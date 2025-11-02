@@ -343,12 +343,6 @@ export default function ReadingResultPage() {
                 ส่งต่อให้เพื่อน
               </button>
 
-              <button
-                onClick={() => setShowMenu(false)}
-                className="mt-2 w-full rounded-xl bg-slate-100 px-4 py-3 text-center text-base font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
-              >
-                ยกเลิก
-              </button>
             </div>
           </div>
         </>

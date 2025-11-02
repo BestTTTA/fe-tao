@@ -15,7 +15,7 @@ export type RouteOptions = {
   onRightClick?: () => void;
 
   /** NEW: กำหนดการทำงานของปุ่มขวา */
-  rightAction?: "menu" | "share";
+  rightAction?: "menu" | "share" | "dots-menu";
 };
 
 export default function TransparentHeader({
@@ -74,7 +74,7 @@ export default function TransparentHeader({
 
   const handleBack = () => (r.backPath ? router.push(r.backPath) : router.back());
 
-  // ปุ่มขวา: แยก share/menu ตาม rightAction
+  // ปุ่มขวา: แยก share/menu/dots-menu ตาม rightAction
   const handleRight = async () => {
     if (r.onRightClick) r.onRightClick();
     else if (onRightClick) onRightClick();
@@ -98,6 +98,11 @@ export default function TransparentHeader({
       } catch {
         // เงียบ ๆ ถ้าผู้ใช้ยกเลิก
       }
+      return;
+    }
+
+    if (r.rightAction === "dots-menu") {
+      // ถ้าเป็น dots-menu ให้เรียก callback เท่านั้น ไม่ต้องทำอะไร
       return;
     }
 
@@ -152,7 +157,7 @@ export default function TransparentHeader({
         {/* Right: Menu or Share (ตาม route) */}
         {r.showMenu ? (
           <button
-            aria-label={r.rightAction === "share" ? "Share" : "Menu"}
+            aria-label={r.rightAction === "share" ? "Share" : r.rightAction === "dots-menu" ? "Options" : "Menu"}
             onClick={handleRight}
             className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-slate-700 shadow-md ring-1 ring-black/5 backdrop-blur hover:bg-white"
           >
@@ -165,13 +170,20 @@ export default function TransparentHeader({
                   <circle cx="18" cy="19" r="3" />
                   <path d="M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5" />
                 </svg>
+              ) : r.rightAction === "dots-menu" ? (
+                // Vertical dots icon (จุดไข่ปลาสามจุดแนวตั้ง)
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <circle cx="12" cy="5" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="12" cy="19" r="2" />
+                </svg>
               ) : (
-                // Menu icon + orange dot
+                // Menu icon (hamburger)
                 <>
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <path d="M4 7h16M4 12h16M4 17h16" />
                   </svg>
-                
+
                 </>
               )}
             </div>

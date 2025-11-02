@@ -50,6 +50,8 @@ export default function ReadingResultPage() {
   const [deck, setDeck] = useState<Deck | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showCardSelector, setShowCardSelector] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -115,6 +117,70 @@ export default function ReadingResultPage() {
     return pickedIndexes.map((i) => cards[i % cards.length]!);
   }, [cards, pickedIndexes]);
 
+  const handleSaveImage = async () => {
+    setShowMenu(false);
+
+    // ถ้ามีมากกว่า 1 การ์ด ให้เลือกก่อน
+    if (chosenCards.length > 1) {
+      setShowCardSelector(true);
+    } else if (chosenCards.length === 1) {
+      // บันทึกการ์ดเดียวเลย
+      downloadCardImage(chosenCards[0]!);
+    }
+  };
+
+  const downloadCardImage = async (card: Card) => {
+    try {
+      const imageUrl = toPublicUrl(card.card_url);
+      if (!imageUrl) {
+        alert("ไม่พบรูปภาพการ์ด");
+        return;
+      }
+
+      // ดาวน์โหลดรูปภาพ
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${card.card_name}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setShowCardSelector(false);
+    } catch (error) {
+      console.error("Error saving image:", error);
+      alert("ไม่สามารถบันทึกภาพได้");
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const url = typeof window !== "undefined" ? window.location.href : "";
+      const shareData = {
+        title: "ไพ่ของคุณ - TAROT & ORACLE",
+        text: `ดูผลการทำนายไพ่ยิปซีของฉัน`,
+        url,
+      };
+
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else if (navigator.clipboard && url) {
+        await navigator.clipboard.writeText(url);
+        alert("คัดลอกลิงก์แล้ว");
+      } else {
+        alert(url || "ไม่พบ URL สำหรับแชร์");
+      }
+      setShowMenu(false);
+    } catch (error) {
+      // ผู้ใช้ยกเลิก หรือเกิดข้อผิดพลาด
+      console.error("Error sharing:", error);
+    }
+  };
+
   if (loading) {
     return (
       <main className="relative min-h-screen text-white">
@@ -167,8 +233,10 @@ export default function ReadingResultPage() {
         subtitle=""
         routeRules={{
           "/reading/*": {
-            showLogo: false, showSearch: false, showMenu: false,
+            showLogo: false, showSearch: false, showMenu: true,
             showBack: true, backPath: `/reading/${spreadId}/manual?deck=${deck.id}`,
+            rightAction: "dots-menu",
+            onRightClick: () => setShowMenu(true),
           },
         }}
       />
@@ -237,6 +305,106 @@ export default function ReadingResultPage() {
           </div>
         </div>
       </div>
+
+      {/* เมนูด้านล่าง */}
+      {showMenu && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowMenu(false)}
+          />
+
+          {/* เมนู */}
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md px-4 pb-4">
+            <div className="rounded-2xl bg-white p-2 shadow-2xl">
+              <button
+                onClick={handleSaveImage}
+                className="w-full rounded-xl px-4 py-4 text-left text-base font-semibold text-slate-900 hover:bg-slate-50 transition-colors flex items-center gap-3"
+              >
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
+                </svg>
+                บันทึกภาพ
+              </button>
+
+              <button
+                onClick={handleShare}
+                className="w-full rounded-xl px-4 py-4 text-left text-base font-semibold text-slate-900 hover:bg-slate-50 transition-colors flex items-center gap-3"
+              >
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <path d="M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5" />
+                </svg>
+                ส่งต่อให้เพื่อน
+              </button>
+
+              <button
+                onClick={() => setShowMenu(false)}
+                className="mt-2 w-full rounded-xl bg-slate-100 px-4 py-3 text-center text-base font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* เลือกการ์ดที่จะบันทึก */}
+      {showCardSelector && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowCardSelector(false)}
+          />
+
+          {/* Card Selector */}
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md px-4 pb-4">
+            <div className="rounded-2xl bg-white p-4 shadow-2xl">
+              <h3 className="mb-4 text-center text-lg font-semibold text-slate-900">
+                เลือกการ์ดที่ต้องการบันทึก
+              </h3>
+
+              <div className="max-h-96 space-y-2 overflow-y-auto">
+                {chosenCards.map((card, idx) => (
+                  <button
+                    key={card.id}
+                    onClick={() => downloadCardImage(card)}
+                    className="w-full rounded-xl p-3 text-left hover:bg-slate-50 transition-colors flex items-center gap-3 border border-slate-200"
+                  >
+                    <img
+                      src={toPublicUrl(card.card_url) || "/placeholder-card.jpg"}
+                      alt={card.card_name}
+                      className="h-16 w-12 flex-none rounded-lg object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs text-slate-500">ไพ่ใบที่ {idx + 1}</div>
+                      <div className="truncate text-sm font-semibold text-slate-900">
+                        {card.card_name}
+                      </div>
+                    </div>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-none text-slate-400">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowCardSelector(false)}
+                className="mt-4 w-full rounded-xl bg-slate-100 px-4 py-3 text-center text-base font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </main>
   );
 }

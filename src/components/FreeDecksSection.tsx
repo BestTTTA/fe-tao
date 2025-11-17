@@ -190,7 +190,9 @@ function DeckCard({
         <img
           src={deck.deck_url || "/placeholder-deck.jpg"}
           alt={deck.deck_name}
-          className="h-36 w-full rounded-xl object-cover"
+          className="h-36 w-full rounded-2xl object-contain bg-gradient-to-br from-slate-50 to-slate-100"
+          draggable={false}
+          loading="lazy"
         />
 
         <button

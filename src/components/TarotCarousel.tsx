@@ -167,7 +167,7 @@ export default function TarotCarousel({
   // render
   if (loading) {
     return (
-      <div className={`relative mx-auto w-[310px] sm:w-[360px] ${className}`}>
+      <div className={`relative mx-auto w-full ${className}`}>
         <div className="h-[220px] animate-pulse rounded-2xl bg-slate-200/40" />
       </div>
     );
@@ -178,7 +178,7 @@ export default function TarotCarousel({
   return (
     <div className={`relative mx-auto w-full ${className}`}>
       <div
-        className="overflow-hidden rounded-2xl border border-white/20 bg-slate-900/10 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur"
+        className="overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-slate-900/20 to-slate-800/20 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur"
         style={{ height }}
       >
         <div

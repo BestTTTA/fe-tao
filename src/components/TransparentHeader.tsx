@@ -111,8 +111,8 @@ export default function TransparentHeader({
   };
 
   return (
-    <header className={`pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-center px-4 pt-4 sm:px-6 ${className}`}>
-      <div className="pointer-events-auto relative flex w-full max-w-6xl items-center justify-between">
+    <header className={`pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-center px-4 pt-4 ${className}`}>
+      <div className="pointer-events-auto relative flex w-full max-w-[390px] items-center justify-between">
 
         {/* Left: Back or Search */}
         {r.showBack ? (

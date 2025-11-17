@@ -19,14 +19,14 @@ export default function HoroscopeCategoryGrid({
   className?: string;
 }) {
   return (
-    <section className={`mx-auto w-full max-w-md sm:max-w-2xl ${className}`}>
+    <section className={`mx-auto w-full ${className}`}>
       {/* heading */}
       <h2 className="mb-3 px-2 text-2xl font-extrabold tracking-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
         {heading}
       </h2>
 
       {/* grid 2x2 */}
-      <div className="grid grid-cols-2 gap-3 px-2 sm:gap-4">
+      <div className="grid grid-cols-2 gap-3 px-2">
         {items.map((it) => (
           <CategoryCard key={it.key} item={it} />)
         )}
@@ -40,7 +40,13 @@ function CategoryCard({ item }: { item: CategoryItem }) {
     <div className="relative h-28 overflow-hidden rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.35)] ring-1 ring-white/10 transition-transform duration-200 hover:-translate-y-0.5">
       {/* bg image */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={item.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <img
+        src={item.image}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+        draggable={false}
+        loading="lazy"
+      />
 
       {/* overlay pattern + gradient for readability */}
       <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-black/10 to-black/0" />

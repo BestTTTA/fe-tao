@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     // -------- read input --------
     const body = await req.json().catch(() => ({}));
     const priceId = body?.priceId as string | undefined;
+    const packageType = body?.packageType as string | undefined; // ✅ รับจาก frontend
     if (!priceId) {
       return NextResponse.json({ error: "Missing priceId" }, { status: 400 });
     }
@@ -92,12 +93,19 @@ export async function POST(req: NextRequest) {
     const mode: "payment" | "subscription" =
       price.type === "recurring" ? "subscription" : "payment";
 
-    // ✅ ดึงข้อมูล package_type จาก product.metadata
-    const product = price.product as Stripe.Product;
-    const packageType =
-      product?.metadata?.package_type?.toUpperCase() === "YEAR"
-        ? "YEAR"
-        : "MONTH";
+    // ✅ ใช้ package_type จาก frontend ที่ส่งมา (มั่นใจได้ว่าถูกต้อง)
+    // fallback: เช็คจาก price.recurring.interval
+    const finalPackageType = packageType?.toUpperCase() === "YEAR" || packageType?.toUpperCase() === "MONTH"
+      ? packageType.toUpperCase()
+      : price.recurring?.interval === "year"
+      ? "YEAR"
+      : "MONTH";
+
+    console.log("📦 Package Type Mapping:", {
+      frontend: packageType,
+      priceInterval: price.recurring?.interval,
+      final: finalPackageType,
+    });
 
     // -------- create checkout session --------
     const session = await stripe.checkout.sessions.create({
@@ -111,14 +119,14 @@ export async function POST(req: NextRequest) {
       metadata: {
         user_id: user.id,
         price_id: priceId,
-        package_type: packageType, // ✅ ระบุ MONTH/YEAR ชัดเจน
+        package_type: finalPackageType, // ✅ ใช้ค่าที่ได้จาก frontend หรือ fallback
       },
       ...(mode === "subscription"
         ? {
             subscription_data: {
               metadata: {
                 user_id: user.id,
-                package_type: packageType,
+                package_type: finalPackageType, // ✅ ใช้ค่าที่ได้จาก frontend หรือ fallback
               },
             },
           }

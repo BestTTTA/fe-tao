@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync-prices": "tsx scripts/sync-stripe-prices.ts"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^5.2.0",
@@ -29,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

@@ -81,11 +81,18 @@ export async function POST(req: Request) {
 
         // 1. บันทึกประวัติการซื้อ (purchase_history)
         {
+          // ตรวจสอบว่า price_id มีใน stripe_prices table หรือไม่
+          const { data: priceExists } = await supabase
+            .from("stripe_prices")
+            .select("id")
+            .eq("id", priceId)
+            .maybeSingle();
+
           const { error: insertError } = await supabase
             .from("purchase_history")
             .insert({
               user_id: userId,
-              price_id: priceId,
+              price_id: priceExists ? priceId : null, // ✅ ใส่ null ถ้าไม่มีใน stripe_prices
               package_type: packageType || "FREE",
               stripe_checkout_session_id: session.id,
               stripe_payment_intent_id: session.payment_intent,
@@ -166,9 +173,9 @@ export async function POST(req: Request) {
               user_id: userId,
               price_id: sub.items.data[0]?.price?.id,
               status: sub.status, // 'active', 'trialing', 'past_due', ...
-              package_type: packageType,
               current_period_start: currentPeriodStartIso,
               current_period_end: currentPeriodEndIso,
+              // ลบ package_type ออกเพราะ subscriptions table ไม่มี column นี้
             });
 
           if (upsertError) {

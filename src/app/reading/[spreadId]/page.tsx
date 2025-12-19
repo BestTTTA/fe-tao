@@ -65,13 +65,14 @@ export default function ReadingQuestionPage() {
         className="absolute inset-0 -z-10"
  />
 
-      <div className="px-4 pt-20 pb-28 w-full">
+      <div className="mx-auto max-w-md px-4 pt-20 pb-28 w-full">
         <label className="block text-sm font-semibold text-white/90">ระบุเรื่องที่ต้องการดูดวง</label>
-        <input
+        <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="กรุณาระบุเรื่องที่ต้องการดูดวง"
-          className="mt-2 w-full rounded-lg border border-white/20 bg-white/95 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/40"
+          rows={3}
+          className="mt-2 w-full rounded-lg border border-white/20 bg-white/95 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/40 resize-none"
         />
 
         <p className="mt-3 text-xs text-white/80">

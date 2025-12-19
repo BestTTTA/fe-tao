@@ -183,14 +183,13 @@ function DeckCard({
 }) {
   return (
     <div className="relative rounded-2xl border bg-white p-2">
-      <span className="absolute left-2 top-2 h-2 w-2 rounded-full bg-orange-400" />
 
       <div className="relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={deck.deck_url || "/placeholder-deck.jpg"}
           alt={deck.deck_name}
-          className="h-36 w-full rounded-2xl object-contain bg-gradient-to-br from-slate-50 to-slate-100"
+          className="h-36 w-full rounded-2xl object-cover bg-gradient-to-br from-slate-50 to-slate-100"
           draggable={false}
           loading="lazy"
         />

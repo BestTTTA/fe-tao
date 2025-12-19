@@ -5,7 +5,9 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(npm run build)",
-      "Skill(claude-mem:troubleshoot)"
+      "Skill(claude-mem:troubleshoot)",
+      "Bash(powershell -Command \"Get-ChildItem *.docx | ForEach-Object { Write-Host $_Name }\")",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

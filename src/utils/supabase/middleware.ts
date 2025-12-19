@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/', '/login', '/register', '/verify-email', '/auth', '/error']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/verify-email', '/forgot', '/reset-password', '/auth', '/error']
 
 // เพิ่ม pattern สำหรับหน้า result ของ reading
 const PUBLIC_PATTERNS = [/^\/reading\/[^/]+\/result$/]
@@ -12,6 +12,11 @@ const isPublicPath = (pathname: string) =>
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
+
+  // 🔧 Skip middleware check in development mode
+  if (process.env.SKIP_MIDDLEWARE === 'true') {
+    return supabaseResponse
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

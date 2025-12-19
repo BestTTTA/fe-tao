@@ -7,7 +7,7 @@ import { createClient } from '@/utils/supabase/server'
 
 /* ---------------- Helpers ---------------- */
 
-function toErrorRedirect(code: string, message: string) {
+function toErrorRedirect(code: string, message: string): never {
   const q = new URLSearchParams({ code, message })
   redirect(`/error?${q.toString()}`)
 }
@@ -138,6 +138,52 @@ export async function resendVerification(formData: FormData) {
   redirect('/verify-email?sent=1')
 }
 
+/** ส่งอีเมลรีเซ็ตรหัสผ่าน */
+export async function requestPasswordReset(formData: FormData) {
+  const supabase = await createClient()
+  const email = String(formData.get('email') || '').trim()
+
+  if (!email) {
+    toErrorRedirect('missing_email', 'กรุณากรอกอีเมล')
+  }
+
+  const siteUrl = await getSiteUrl()
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/confirm?type=recovery`,
+  })
+
+  if (error) {
+    toErrorRedirect('reset_error', error.message ?? 'ไม่สามารถส่งอีเมลรีเซ็ตรหัสผ่าน')
+  }
+
+  redirect('/forgot?sent=1')
+}
+
+/** อัพเดทรหัสผ่านใหม่ (ใช้หลังจากยืนยันลิงก์) */
+export async function updatePassword(formData: FormData) {
+  const supabase = await createClient()
+  const password = String(formData.get('password') || '').trim()
+  const confirm = String(formData.get('confirm') || '').trim()
+
+  if (!password || password.length < 8) {
+    toErrorRedirect('invalid_password', 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร')
+  }
+
+  if (password !== confirm) {
+    toErrorRedirect('password_mismatch', 'รหัสผ่านไม่ตรงกัน')
+  }
+
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) {
+    toErrorRedirect('update_error', error.message ?? 'ไม่สามารถอัพเดทรหัสผ่าน')
+  }
+
+  // ออกจากระบบเพื่อให้ล็อกอินใหม่ด้วยรหัสผ่านใหม่
+  await supabase.auth.signOut()
+  redirect('/login?reset=success')
+}
+
 export async function signout() {
   const supabase = await createClient()
   const { error } = await supabase.auth.signOut()
@@ -152,9 +198,12 @@ export async function signout() {
 
 export async function signInWithGoogle() {
   const supabase = await createClient();
+  const siteUrl = await getSiteUrl();
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
+      redirectTo: `${siteUrl}/auth/callback`,
       queryParams: {
         access_type: "offline",
         prompt: "consent",
@@ -162,10 +211,66 @@ export async function signInWithGoogle() {
     },
   });
 
-  if (error) {
+  if (error || !data.url) {
     console.log(error);
     redirect("/error");
   }
 
   redirect(data.url);
+}
+
+export async function signInWithFacebook() {
+  const supabase = await createClient();
+  const siteUrl = await getSiteUrl();
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "facebook",
+    options: {
+      redirectTo: `${siteUrl}/auth/callback`,
+    },
+  });
+
+  if (error || !data.url) {
+    console.log(error);
+    toErrorRedirect('auth_facebook_error', error?.message ?? 'ไม่สามารถเข้าสู่ระบบด้วย Facebook ได้');
+  }
+
+  redirect(data.url);
+}
+
+export async function signInWithApple() {
+  const supabase = await createClient();
+  const siteUrl = await getSiteUrl();
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "apple",
+    options: {
+      redirectTo: `${siteUrl}/auth/callback`,
+    },
+  });
+
+  if (error || !data.url) {
+    console.log(error);
+    toErrorRedirect('auth_apple_error', error?.message ?? 'ไม่สามารถเข้าสู่ระบบด้วย Apple ได้');
+  }
+
+  redirect(data.url);
+}
+
+export async function signInWithLine() {
+  const siteUrl = await getSiteUrl();
+
+  // Generate random state for CSRF protection
+  const state = Math.random().toString(36).substring(7);
+
+  // Build LINE OAuth authorization URL
+  const lineAuthUrl = new URL('https://access.line.me/oauth2/v2.1/authorize');
+  lineAuthUrl.searchParams.set('response_type', 'code');
+  lineAuthUrl.searchParams.set('client_id', process.env.LINE_CHANNEL_ID || '');
+  lineAuthUrl.searchParams.set('redirect_uri', `${siteUrl}/auth/line/callback`);
+  lineAuthUrl.searchParams.set('state', state);
+  lineAuthUrl.searchParams.set('scope', 'profile openid email');
+
+  // Redirect to LINE authorization page
+  redirect(lineAuthUrl.toString());
 }

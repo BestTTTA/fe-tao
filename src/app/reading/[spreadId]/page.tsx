@@ -5,6 +5,14 @@ import { useState, useMemo } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 
+// Helper to get card count from spreadId
+function spreadCountFromId(id?: string): number {
+  if (!id) return 3;
+  if (id === "12circle") return 12;
+  const match = /^(\d+)-card$/.exec(id);
+  return match ? Math.max(1, Math.min(12, parseInt(match[1], 10))) : 3;
+}
+
 export default function ReadingQuestionPage() {
   const router = useRouter();
   const params = useParams<{ spreadId?: string; spredId?: string }>();
@@ -18,7 +26,26 @@ export default function ReadingQuestionPage() {
   const go = (mode: "auto" | "manual") => {
     const q = encodeURIComponent(question.trim());
     const d = encodeURIComponent(deckId);
-    router.push(`/reading/${spreadId}/${mode}?deck=${d}&q=${q}`);
+
+    if (mode === "auto") {
+      // Auto mode: Fisher-Yates shuffle and go straight to result
+      const cardCount = spreadCountFromId(spreadId);
+      const totalCards = 18;
+
+      // Fisher-Yates shuffle to get random unique indexes
+      const allIndexes = Array.from({ length: totalCards }, (_, i) => i);
+      for (let i = allIndexes.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allIndexes[i], allIndexes[j]] = [allIndexes[j], allIndexes[i]];
+      }
+
+      // Take first N cards
+      const picks = allIndexes.slice(0, cardCount).join(',');
+      router.push(`/reading/${spreadId}/result?deck=${d}&pick=${encodeURIComponent(picks)}&q=${q}`);
+    } else {
+      // Manual mode: go to manual shuffle page
+      router.push(`/reading/${spreadId}/${mode}?deck=${d}&q=${q}`);
+    }
   };
 
   return (

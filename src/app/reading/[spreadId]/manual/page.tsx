@@ -409,7 +409,7 @@ function DeckStrip({
           .shuffle-card,
           .selected-card,
           .touch-card {
-            animation-duration: 800ms;
+            animation-duration: 2000ms;
           }
         }
       `}</style>

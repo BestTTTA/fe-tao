@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(npm run build)",
+      "Skill(claude-mem:troubleshoot)"
+    ]
+  }
+}

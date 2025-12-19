@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
       token_hash,
     })
     if (!error) {
+      // If type is 'recovery', redirect to reset-password page
+      if (type === 'recovery') {
+        redirect('/reset-password')
+      }
       // redirect user to specified redirect URL or root of app
       redirect(next)
     }

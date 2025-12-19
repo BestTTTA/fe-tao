@@ -7,6 +7,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import TransparentHeader from "@/components/TransparentHeader";
 import { toPublicUrl } from "@/utils/toPublicUrl";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Deck = {
   id: number;
@@ -52,6 +53,12 @@ export default function ReadingResultPage() {
   const [error, setError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showCardSelector, setShowCardSelector] = useState(false);
+
+  // Animation states
+  const [showIntro, setShowIntro] = useState(true);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [animationComplete, setAnimationComplete] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -116,6 +123,63 @@ export default function ReadingResultPage() {
     if (!cards.length || pickedIndexes.length === 0) return [];
     return pickedIndexes.map((i) => cards[i % cards.length]!);
   }, [cards, pickedIndexes]);
+
+  // Preload images before animation
+  useEffect(() => {
+    if (chosenCards.length === 0 || loading) return;
+
+    const imageUrls = chosenCards
+      .map((c) => toPublicUrl(c.card_url))
+      .filter((url): url is string => !!url);
+
+    if (imageUrls.length === 0) {
+      setImagesLoaded(true);
+      return;
+    }
+
+    const preloadImage = (url: string) => {
+      return new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => resolve(); // ถ้าโหลดไม่ได้ก็ข้ามไป
+        img.src = url;
+      });
+    };
+
+    Promise.all(imageUrls.map(preloadImage))
+      .then(() => {
+        setImagesLoaded(true);
+      })
+      .catch(() => {
+        setImagesLoaded(true); // ถ้า error ก็ให้เริ่ม animation ได้
+      });
+  }, [chosenCards, loading]);
+
+  // Animation control logic
+  useEffect(() => {
+    if (!showIntro || chosenCards.length === 0 || loading || !imagesLoaded) return;
+
+    if (currentCardIndex >= chosenCards.length) {
+      const timer = setTimeout(() => {
+        setShowIntro(false);
+        setAnimationComplete(true);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+
+    const timer = setTimeout(() => {
+      setCurrentCardIndex((prev) => prev + 1);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [currentCardIndex, showIntro, chosenCards.length, loading, imagesLoaded]);
+
+  // Handle skip to next card
+  const handleSkipToNext = () => {
+    if (currentCardIndex < chosenCards.length) {
+      setCurrentCardIndex((prev) => prev + 1);
+    }
+  };
 
   const handleSaveImage = async () => {
     setShowMenu(false);
@@ -226,6 +290,122 @@ export default function ReadingResultPage() {
     );
   }
 
+  // Show intro animation with cards popping up one by one
+  if (showIntro && !loading && chosenCards.length > 0) {
+    // Show loading indicator while images are loading
+    if (!imagesLoaded) {
+      return (
+        <main className="relative min-h-screen text-white">
+          <TransparentHeader
+            title="ไพ่ของคุณ"
+            subtitle=""
+            routeRules={{
+              "/reading/*": {
+                showLogo: false, showSearch: false, showMenu: false,
+                showBack: false,
+              },
+            }}
+          />
+          <section className="relative h-[140px] w-full overflow-hidden" />
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white"></div>
+              <p className="mt-4 text-white/70">กำลังเตรียมการ์ด...</p>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
+    return (
+      <main className="relative min-h-screen text-white">
+        <TransparentHeader
+          title="ไพ่ของคุณ"
+          subtitle=""
+          routeRules={{
+            "/reading/*": {
+              showLogo: false, showSearch: false, showMenu: false,
+              showBack: false,
+            },
+          }}
+        />
+
+        <section className="relative h-[140px] w-full overflow-hidden" />
+
+        {/* Card intro animation overlay */}
+        <AnimatePresence mode="wait">
+          {currentCardIndex < chosenCards.length && (
+            <motion.div
+              key={currentCardIndex}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={handleSkipToNext}
+            >
+              <motion.div
+                className="relative w-64 rounded-2xl bg-white/10 p-4 ring-2 ring-white/20 backdrop-blur-xl"
+                initial={{ scale: 0, rotate: -10, opacity: 0 }}
+                animate={{
+                  scale: [0, 1.2, 1],
+                  rotate: 0,
+                  opacity: 1,
+                }}
+                exit={{
+                  scale: 0.8,
+                  opacity: 0,
+                  y: -50,
+                }}
+                transition={{
+                  duration: 0.5,
+                  ease: [0.34, 1.56, 0.64, 1], // Custom easing ที่ให้ bounce effect
+                }}
+              >
+                <img
+                  src={toPublicUrl(chosenCards[currentCardIndex].card_url) || "/placeholder-card.jpg"}
+                  alt={chosenCards[currentCardIndex].card_name}
+                  className="w-full rounded-xl object-cover shadow-2xl"
+                />
+                <div className="mt-3 text-center">
+                  <div className="text-sm text-white/70">
+                    ไพ่ใบที่ {currentCardIndex + 1}
+                  </div>
+                  <div className="mt-1 text-lg font-bold text-white">
+                    {chosenCards[currentCardIndex].card_name}
+                  </div>
+                </div>
+
+                {/* Progress indicator */}
+                <div className="mt-4 flex justify-center gap-2">
+                  {chosenCards.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-2 w-2 rounded-full transition-all ${
+                        i === currentCardIndex
+                          ? "bg-amber-400 scale-125"
+                          : i < currentCardIndex
+                          ? "bg-white/60"
+                          : "bg-white/20"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Skip hint */}
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-white/50 animate-pulse">
+                    แตะเพื่อข้ามไปใบถัดไป
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+    );
+  }
+
   return (
     <main className="relative min-h-screen text-white">
       <TransparentHeader
@@ -247,7 +427,12 @@ export default function ReadingResultPage() {
 
       <div className="relative -mt-14 mx-auto max-w-md px-4 pb-28">
         {/* รูปใหญ่ 2 ใบแรก */}
-        <div className="flex items-start justify-center gap-3">
+        <motion.div
+          initial={animationComplete ? { opacity: 0, scale: 0.8, y: -100 } : false}
+          animate={animationComplete ? { opacity: 1, scale: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="flex items-start justify-center gap-3"
+        >
           {chosenCards.slice(0, 2).map((c) => (
             <div key={c.id} className="w-36 rounded-xl bg-white/10 p-2 ring-1 ring-white/15 backdrop-blur">
               {/* ✅ ใช้ toPublicUrl */}
@@ -258,12 +443,23 @@ export default function ReadingResultPage() {
               />
             </div>
           ))}
-        </div>
+        </motion.div>
 
         {/* รายการรายละเอียด */}
-        <section className="mt-4 space-y-3">
+        <motion.section
+          initial={animationComplete ? { opacity: 0, y: 50 } : false}
+          animate={animationComplete ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.3, staggerChildren: 0.1 }}
+          className="mt-4 space-y-3"
+        >
           {chosenCards.map((c, idx) => (
-            <article key={c.id} className="flex gap-3 rounded-2xl bg-white p-3 text-slate-900">
+            <motion.article
+              key={c.id}
+              initial={animationComplete ? { opacity: 0, x: -20 } : false}
+              animate={animationComplete ? { opacity: 1, x: 0 } : {}}
+              transition={{ duration: 0.4, delay: 0.4 + idx * 0.1 }}
+              className="flex gap-3 rounded-2xl bg-white p-3 text-slate-900"
+            >
               <img
                 src={toPublicUrl(c.card_url) || "/placeholder-card.jpg"}  // ✅ ใช้ toPublicUrl
                 alt={c.card_name}
@@ -287,9 +483,9 @@ export default function ReadingResultPage() {
                   </Link>
                 </div>
               </div>
-            </article>
+            </motion.article>
           ))}
-        </section>
+        </motion.section>
 
         {/* ปุ่มล่าง */}
         <div className="fixed inset-x-0 bottom-2">

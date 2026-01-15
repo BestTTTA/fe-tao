@@ -30,7 +30,8 @@ const toPublicUrl = (p?: string | null) => {
 
 export default async function DeckDetailPage({
   params,
-}: { params: { deckId: string } }) {
+}: { params: Promise<{ deckId: string }> }) {
+  const { deckId } = await params;
   const supabase = await createClient();
 
   // อ่านผู้ใช้ + โปรไฟล์ (เพื่อดูสิทธิ์ VIP)
@@ -56,7 +57,7 @@ export default async function DeckDetailPage({
   const { data: deck, error: dErr } = await supabase
     .from("decks")
     .select("id, deck_name, deck_url, detail, free, deck_back_url")
-    .eq("id", Number(await params.deckId))
+    .eq("id", Number(deckId))
     .maybeSingle<Deck>();
 
   if (dErr || !deck) return notFound();
@@ -69,7 +70,7 @@ export default async function DeckDetailPage({
       .from("cards")
       .select("id, card_name, card_url")
       .eq("deck_id", deck.id)
-      .order("id", { ascending: true });
+      .order("card_index", { ascending: true });
     cards = (data ?? []) as Card[];
   }
 
@@ -82,7 +83,7 @@ export default async function DeckDetailPage({
             title=""
             subtitle=""
             routeRules={{
-              [`/decks/${params.deckId}`]: {
+              [`/decks/${deckId}`]: {
                 showLogo: false,
                 showSearch: false,
                 showMenu: false,

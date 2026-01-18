@@ -339,14 +339,14 @@ function DeckCard({
         <img
           src={deck.image || "/placeholder-deck.jpg"}
           alt={deck.name}
-          className="h-32 w-full rounded-xl object-cover"
+          className="h-48 w-full rounded-xl object-contain"
         />
 
         {/* Favorite */}
         <button
           aria-label="favorite"
           onClick={onToggleFav}
-          className="absolute right-2 top-2 grid h-8 w-8 place-items-center text-slate-700"
+          className="absolute right-2 top-1 grid h-8 w-8 place-items-center text-slate-700"
         >
           {isFav ? <HeartSolid /> : <Heart />}
         </button>
@@ -359,7 +359,7 @@ function DeckCard({
         )}
       </div>
 
-      <div className="mt-2">
+      <div className="">
         <div className="line-clamp-1 text-sm font-semibold">{deck.name}</div>
 
         <div className="mt-2 flex items-center gap-2">
@@ -396,7 +396,7 @@ function Heart() {
       width="24"
       height="24"
       fill="none"
-      stroke="white"
+      stroke="black"
       strokeWidth="2"
     >
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-.98-.98a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.76-8.76a5.5 5.5 0 0 0 0-7.78Z" />

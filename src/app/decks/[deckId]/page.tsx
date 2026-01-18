@@ -78,25 +78,22 @@ export default async function DeckDetailPage({
     <main className="min-h-screen text-white">
       <div className="mx-auto max-w-md px-4 pb-24 pt-6">
         {/* Header */}
-        <div className="mb-4 flex items-center gap-3 justify-center">
-          <TransparentHeader
-            title=""
-            subtitle=""
-            routeRules={{
-              [`/decks/${deckId}`]: {
-                showLogo: false,
-                showSearch: false,
-                showMenu: false,
-                showBack: true,
-                backPath: "/",
-              },
-            }}
-          />
-          <h1 className="text-lg font-bold">{deck.deck_name}</h1>
-        </div>
+        <TransparentHeader
+          title={deck.deck_name}
+          subtitle=""
+          routeRules={{
+            [`/decks/${deckId}`]: {
+              showLogo: false,
+              showSearch: false,
+              showMenu: false,
+              showBack: true,
+              backPath: "/",
+            },
+          }}
+        />
 
         {/* Deck hero */}
-        <div className="rounded-2xl border border-white/10 bg-white p-3">
+        <div className="mt-14 rounded-2xl border border-white/10 bg-white p-3">
           
 
           <TarotCarousel
@@ -106,6 +103,7 @@ export default async function DeckDetailPage({
             ]}
             autoPlay
             interval={4000}
+            aspectSquare
           />
 
 
@@ -144,7 +142,7 @@ export default async function DeckDetailPage({
                 <img
                   src={toPublicUrl(c.card_url) || "/placeholder-card.jpg"}
                   alt={c.card_name}
-                  className="h-20 w-16 flex-none rounded-lg object-cover"
+                  className="h-20 w-14 flex-none rounded-[10px]"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] text-black">ใบที่ {i + 1}</div>

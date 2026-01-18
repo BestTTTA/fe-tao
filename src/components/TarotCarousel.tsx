@@ -22,6 +22,7 @@ type Props = {
   className?: string;
   limit?: number; // ใช้ตอน fallback ไปดึง promotions
   height?: number;
+  aspectSquare?: boolean; // 👈 แสดงแบบสี่เหลี่ยมจัตุรัส
 };
 
 export default function TarotCarousel({
@@ -33,6 +34,7 @@ export default function TarotCarousel({
   className = "",
   limit = 5,
   height = 220,
+  aspectSquare = false,
 }: Props) {
   const supabase = createClient();
   const router = useRouter();
@@ -178,8 +180,8 @@ export default function TarotCarousel({
   return (
     <div className={`relative mx-auto w-full ${className}`}>
       <div
-        className="overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-slate-900/20 to-slate-800/20 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur"
-        style={{ height }}
+        className={`overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-slate-900/20 to-slate-800/20 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur ${aspectSquare ? "aspect-square" : ""}`}
+        style={aspectSquare ? undefined : { height }}
       >
         <div
           className="flex h-full transition-transform duration-500"
@@ -203,7 +205,7 @@ export default function TarotCarousel({
               <img
                 src={src}
                 alt=""
-                className="absolute inset-0 h-full w-full rounded-2xl object-cover"
+                className="absolute inset-0 h-full w-full rounded-2xl object-contain"
                 draggable={false}
                 loading="lazy"
               />

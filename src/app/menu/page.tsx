@@ -6,12 +6,61 @@ import TransparentHeader from "@/components/TransparentHeader";
 import { signout } from "@/lib/auth-actions";
 import Image from "next/image";
 import LanguageModal from "@/components/LanguageModal";
+import ConfirmModal from "@/components/ConfirmModal";
+import AlertModal from "@/components/AlertModal";
+import { createClient } from "@/utils/supabase/client";
 import { useState } from "react";
 
 export default function MenuPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [language, setLanguage] = useState("ไทย");
   const [openLang, setOpenLang] = useState(false);
+  const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
+  const [openDeleteSuccess, setOpenDeleteSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    try {
+      setSubmitting(true);
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("กรุณาเข้าสู่ระบบก่อน");
+        return;
+      }
+
+      // Check if there's already a pending request
+      const { data: existingRequest } = await supabase
+        .from("account_deletion_requests")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (existingRequest) {
+        setOpenDeleteConfirm(false);
+        setOpenDeleteSuccess(true);
+        return;
+      }
+
+      // Insert deletion request
+      const { error } = await supabase
+        .from("account_deletion_requests")
+        .insert({ user_id: user.id });
+
+      if (error) throw error;
+
+      setOpenDeleteConfirm(false);
+      setOpenDeleteSuccess(true);
+    } catch (error) {
+      console.error("Error submitting deletion request:", error);
+      alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <main className="relative min-h-screen">
@@ -85,6 +134,12 @@ export default function MenuPage() {
             title="ติดต่อเรา"
             onClick={() => router.push("/menu/contact")}
           />
+          <Divider />
+          <MenuItem
+            icon={<TrashIcon />}
+            title="คำขอลบบัญชี"
+            onClick={() => setOpenDeleteConfirm(true)}
+          />
         </Card>
       </div>
 
@@ -111,6 +166,25 @@ export default function MenuPage() {
         selected={language}
         onSelect={(lang) => setLanguage(lang)}
         onClose={() => setOpenLang(false)}
+      />
+
+      {/* Delete Account Confirm Modal */}
+      <ConfirmModal
+        open={openDeleteConfirm}
+        onClose={() => setOpenDeleteConfirm(false)}
+        onConfirm={handleDeleteAccount}
+        body="กรุณายืนยันการลบบัญชี หากท่านยืนยันลบบัญชีแล้ว จะไม่สามารถกู้คืนได้"
+        cancelText="ยกเลิก"
+        confirmText={submitting ? "กำลังส่ง..." : "ยืนยัน"}
+      />
+
+      {/* Delete Account Success Modal */}
+      <AlertModal
+        open={openDeleteSuccess}
+        onClose={() => setOpenDeleteSuccess(false)}
+        title=""
+        body="คุณได้ยืนยันการลบบัญชีแล้ว บัญชีจะถูกลบภายใน 7 วัน"
+        type="warning"
       />
     </main>
   );
@@ -293,6 +367,24 @@ function MailIcon() {
     >
       <path d="M4 4h16v16H4z" />
       <path d="m22 6-10 7L2 6" />
+    </svg>
+  );
+}
+function TrashIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
     </svg>
   );
 }

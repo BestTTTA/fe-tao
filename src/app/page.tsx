@@ -1,10 +1,9 @@
 // app/page.tsx
 import TarotPromoModal from "@/components/TarotPromoModal";
 import TransparentHeader from "@/components/TransparentHeader";
-import TarotCarousel from "@/components/TarotCarousel";
+import HomeBannerCarousel from "@/components/HomeBannerCarousel";
 import BottomTabFooter from "@/components/BottomTabFooter";
-import HoroscopeCategoryGrid from "@/components/HoroscopeCategoryGrid";
-import FreeDecksSection from "@/components/FreeDecksSection"; // ← เพิ่ม
+import FreeDecksSection from "@/components/FreeDecksSection";
 
 export default function Home() {
   return (
@@ -24,12 +23,7 @@ export default function Home() {
       <div className="mx-auto w-full max-w-[390px] space-y-8 px-4 pt-6">
         {/* Carousel */}
         <div className="flex justify-center">
-          <TarotCarousel
-            images={["/banner/banner.png"]}
-            links={["/packages"]}
-            enableLink={true}
-          />
-
+          <HomeBannerCarousel />
         </div>
 
         {/* ✅ Deck ฟรีเฉพาะสมาชิก */}
@@ -43,8 +37,8 @@ export default function Home() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a] to-black"
         />
 
-        <div className="relative mx-auto max-w-[390px] space-y-8 px-4 py-6 text-white pb-[120px]">
-          {/* หมวดหมู่ดูดวง */}
+        {/* <div className="relative mx-auto max-w-[390px] space-y-8 px-4 py-6 text-white pb-[120px]"> */}
+          {/* หมวดหมู่ดูดวง
           <HoroscopeCategoryGrid
             heading="ดูดวง"
             items={[
@@ -53,9 +47,9 @@ export default function Home() {
               { key: "travel", title: "", image: "/categories/travel.png", href: "/horoscope/travel" },
               { key: "health", title: "", image: "/categories/health.png", href: "/horoscope/health" },
             ]}
-          />
+          /> */}
 
-        </div>
+        {/* </div> */}
       </section>
 
       <BottomTabFooter

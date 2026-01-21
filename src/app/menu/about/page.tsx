@@ -1,7 +1,35 @@
 "use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 import TransparentHeader from "@/components/TransparentHeader";
 
 export default function AboutPage() {
+  const supabase = createClient();
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAbout = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("configs")
+          .select("html_content")
+          .eq("key", "about_us")
+          .single();
+
+        if (error) throw error;
+        setHtmlContent(data?.html_content ?? null);
+      } catch (err) {
+        console.error("Error fetching about:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAbout();
+  }, [supabase]);
+
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-start bg-cover bg-center text-white"
@@ -23,11 +51,16 @@ export default function AboutPage() {
 
       <div className="w-full max-w-md p-4 mt-20">
         <div className="bg-white/90 text-black rounded-xl p-5 shadow-lg">
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris
-            imperdiet placerat sagittis. Vestibulum suscipit erat non enim
-            rutrum pharetra. Etiam sollicitudin nulla a iaculis semper.
-          </p>
+          {loading ? (
+            <p className="text-center text-slate-500">กำลังโหลด...</p>
+          ) : htmlContent ? (
+            <div
+              className="prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: htmlContent }}
+            />
+          ) : (
+            <p className="text-center text-slate-500">ไม่พบข้อมูล</p>
+          )}
         </div>
       </div>
     </div>

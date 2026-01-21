@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import TransparentHeader from "@/components/TransparentHeader";
+import AlertModal, { AlertType } from "@/components/AlertModal";
+import {
+  compressImage,
+  isValidImageType,
+  isValidFileSize,
+} from "@/utils/imageCompression";
 
 type UserProfile = {
   id: string;
@@ -24,8 +30,22 @@ export default function AccountProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [alert, setAlert] = useState<{
+    open: boolean;
+    title: string;
+    body: string;
+    type: AlertType;
+  }>({ open: false, title: "", body: "", type: "warning" });
 
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  const showAlert = (title: string, body: string, type: AlertType = "warning") => {
+    setAlert({ open: true, title, body, type });
+  };
+
+  const closeAlert = () => {
+    setAlert({ open: false, title: "", body: "", type: "warning" });
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -60,22 +80,46 @@ export default function AccountProfilePage() {
       const file = e.target.files?.[0];
       if (!file || !user) return;
 
+      // 1. Validate file type
+      if (!isValidImageType(file)) {
+        showAlert(
+          "รูปแบบไฟล์ไม่ถูกต้อง",
+          "กรุณาอัปโหลดเฉพาะไฟล์รูปภาพเท่านั้น"
+        );
+        e.target.value = "";
+        return;
+      }
+
+      // 2. Validate file size (20 MB limit)
+      if (!isValidFileSize(file, 20)) {
+        showAlert(
+          "ขนาดไฟล์เกินกำหนด",
+          "กรุณาเลือกรูปภาพที่มีขนาดไม่เกิน 20 MB"
+        );
+        e.target.value = "";
+        return;
+      }
+
       setUploading(true);
 
-      const fileExt = file.name.split(".").pop();
-      const filePath = `user-profile/${user.id}.${fileExt}`;
+      // 3. Compress and convert to WebP
+      const compressedBlob = await compressImage(file);
+      const filePath = `user-profile/${user.id}.webp`;
 
-      // 1. Upload to Supabase Storage
+      // 4. Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("tao-card")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, compressedBlob, {
+          upsert: true,
+          contentType: "image/webp",
+        });
 
       if (uploadError) throw uploadError;
 
-      // 2. Get public URL
-      const publicUrl = `${baseUrl}/storage/v1/object/public/tao-card/${filePath}`;
+      // 5. Get public URL with cache busting
+      const publicUrl = `${baseUrl}/storage/v1/object/public/tao-card/${filePath}?t=${Date.now()}`;
 
-      // 3. Update profile
+      // 6. Update profile
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: publicUrl })
@@ -83,14 +127,15 @@ export default function AccountProfilePage() {
 
       if (updateError) throw updateError;
 
-      // 4. Update UI
+      // 7. Update UI
       setUser({ ...user, avatar_url: publicUrl });
-      alert("อัปโหลดรูปสำเร็จ!");
+      showAlert("สำเร็จ", "อัปโหลดรูปสำเร็จ!", "success");
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      alert("เกิดข้อผิดพลาดในการอัปโหลดรูป");
+      showAlert("เกิดข้อผิดพลาด", "เกิดข้อผิดพลาดในการอัปโหลดรูป");
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -110,6 +155,15 @@ export default function AccountProfilePage() {
 
   return (
     <main className="relative min-h-screen">
+      {/* Alert Modal */}
+      <AlertModal
+        open={alert.open}
+        onClose={closeAlert}
+        title={alert.title}
+        body={alert.body}
+        type={alert.type}
+      />
+
       {/* Header */}
       <TransparentHeader
         title="TAROT"

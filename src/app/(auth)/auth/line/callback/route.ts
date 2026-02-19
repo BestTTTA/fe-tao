@@ -3,8 +3,18 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 
+function getOrigin(request: NextRequest): string {
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const forwardedProto = request.headers.get('x-forwarded-proto')
+  const host = forwardedHost ?? request.headers.get('host') ?? 'localhost:3000'
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1')
+  const proto = forwardedProto ?? (isLocalhost ? 'http' : 'https')
+  return `${proto}://${host}`
+}
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
+  const origin = getOrigin(request)
   const code = requestUrl.searchParams.get('code')
   const error = requestUrl.searchParams.get('error')
 
@@ -12,20 +22,20 @@ export async function GET(request: NextRequest) {
   if (!process.env.LINE_CHANNEL_ID || !process.env.LINE_CHANNEL_SECRET || !process.env.LINE_DEFAULT_PASSWORD) {
     console.error('Missing required LINE environment variables')
     return NextResponse.redirect(
-      new URL('/error?message=LINE authentication is not configured', requestUrl.origin)
+      new URL('/error?message=LINE authentication is not configured', origin)
     )
   }
 
   // Handle error from LINE
   if (error) {
     return NextResponse.redirect(
-      new URL(`/error?message=LINE authentication failed: ${error}`, requestUrl.origin)
+      new URL(`/error?message=LINE authentication failed: ${error}`, origin)
     )
   }
 
   if (!code) {
     return NextResponse.redirect(
-      new URL('/error?message=No authorization code received', requestUrl.origin)
+      new URL('/error?message=No authorization code received', origin)
     )
   }
 
@@ -39,7 +49,7 @@ export async function GET(request: NextRequest) {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
-        redirect_uri: `${requestUrl.origin}/auth/line/callback`,
+        redirect_uri: `${origin}/auth/line/callback`,
         client_id: process.env.LINE_CHANNEL_ID!,
         client_secret: process.env.LINE_CHANNEL_SECRET!,
       }),
@@ -76,7 +86,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
       {
         cookies: {
           getAll() {
@@ -128,7 +138,7 @@ export async function GET(request: NextRequest) {
           email,
           password: process.env.LINE_DEFAULT_PASSWORD!,
           options: {
-            emailRedirectTo: `${requestUrl.origin}/auth/callback`,
+            emailRedirectTo: `${origin}/auth/callback`,
             data: {
               full_name: profile.displayName,
               avatar_url: profile.pictureUrl,
@@ -256,7 +266,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Create redirect response after sign in
-    const response = NextResponse.redirect(new URL('/', requestUrl.origin))
+    const response = NextResponse.redirect(new URL('/', origin))
 
     // Set all session cookies in the response
     cookiesToSet.forEach(({ name, value, options }) => {
@@ -270,7 +280,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('LINE authentication error:', err)
     return NextResponse.redirect(
-      new URL('/error?message=LINE authentication failed', requestUrl.origin)
+      new URL('/error?message=LINE authentication failed', origin)
     )
   }
 }

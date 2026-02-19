@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ยืนยันการสมัครสมาชิก</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0f172a;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+
+          <!-- Logo / Header -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <p style="margin:0;font-size:26px;font-weight:900;letter-spacing:0.05em;color:#ffffff;">
+                TAROT <span style="color:#a78bfa;">&amp; ORACLE</span>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#1e1b4b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:36px 32px;">
+
+              <!-- Icon -->
+              <p style="text-align:center;font-size:40px;margin:0 0 16px;">✉️</p>
+
+              <!-- Title -->
+              <h1 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#ffffff;text-align:center;">
+                ยืนยันอีเมลของคุณ
+              </h1>
+
+              <!-- Body -->
+              <p style="margin:0 0 28px;font-size:15px;line-height:1.7;color:rgba(255,255,255,0.75);text-align:center;">
+                ขอบคุณที่สมัครสมาชิก!<br />
+                กดปุ่มด้านล่างเพื่อยืนยันอีเมลและเปิดใช้งานบัญชีของคุณ
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;background-color:#6d28d9;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:12px;letter-spacing:0.02em;">
+                      ยืนยันอีเมล
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Fallback link -->
+              <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.45);text-align:center;">
+                หากปุ่มด้านบนไม่ทำงาน ให้คัดลอกลิงก์นี้ไปวางในเบราว์เซอร์:<br />
+                <a href="{{ .ConfirmationURL }}"
+                   style="color:#a78bfa;word-break:break-all;">
+                  {{ .ConfirmationURL }}
+                </a>
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);">
+                หากคุณไม่ได้สมัครสมาชิก สามารถละเว้นอีเมลฉบับนี้ได้เลย
+              </p>
+              <p style="margin:8px 0 0;font-size:12px;color:rgba(255,255,255,0.25);">
+                &copy; Tarot &amp; Oracle. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

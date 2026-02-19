@@ -68,6 +68,21 @@ export default function RegisterPage() {
                   autoComplete="new-password"
                   minLength={8}
                   required
+                  onInput={(e) => {
+                    const input = e.currentTarget as HTMLInputElement;
+                    const val = input.value;
+                    const hasLower = /[a-z]/.test(val);
+                    const hasUpper = /[A-Z]/.test(val);
+                    const hasDigit = /[0-9]/.test(val);
+                    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|<>?,./`~]/.test(val);
+                    if (!hasLower || !hasUpper || !hasDigit || !hasSpecial) {
+                      input.setCustomValidity(
+                        "รหัสผ่านต้องมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และอักขระพิเศษ (!@#$%^&* ฯลฯ) อย่างน้อย 1 ตัว"
+                      );
+                    } else {
+                      input.setCustomValidity("");
+                    }
+                  }}
                   className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3 pr-10"
                 />
                 <button

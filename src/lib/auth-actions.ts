@@ -19,8 +19,9 @@ async function getSiteUrl() {
 
   // FIX: headers() ในบางโปรเจ็กต์เป็น Promise ต้อง await
   const h = await headers()
-  const host = h.get('x-forwarded-host') ?? h.get('host')
-  const proto = h.get('x-forwarded-proto') ?? 'https'
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1')
+  const proto = h.get('x-forwarded-proto') ?? (isLocalhost ? 'http' : 'https')
   return `${proto}://${host}`
 }
 
@@ -90,7 +91,7 @@ export async function signup(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${siteUrl}/login`, 
+      emailRedirectTo: `${siteUrl}/auth/callback`,
       data: {
         full_name,
         nick_name,

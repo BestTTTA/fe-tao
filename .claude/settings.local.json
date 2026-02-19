@@ -10,7 +10,10 @@
       "Bash(powershell -Command:*)",
       "mcp__notion__notion-search",
       "mcp__ide__getDiagnostics",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(dir:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)"
     ]
   }
 }

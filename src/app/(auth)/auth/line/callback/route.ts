@@ -278,9 +278,10 @@ export async function GET(request: NextRequest) {
     // Return the response with session cookies
     return response
   } catch (err) {
-    console.error('LINE authentication error:', err)
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('LINE authentication error:', msg)
     return NextResponse.redirect(
-      new URL('/error?message=LINE authentication failed', origin)
+      new URL(`/error?message=${encodeURIComponent(msg)}`, origin)
     )
   }
 }

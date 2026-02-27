@@ -16,6 +16,7 @@ export default function MenuPage() {
   const supabase = createClient();
   const [language, setLanguage] = useState("ไทย");
   const [openLang, setOpenLang] = useState(false);
+  const [openLogoutConfirm, setOpenLogoutConfirm] = useState(false);
   const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
   const [openDeleteSuccess, setOpenDeleteSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -147,7 +148,7 @@ export default function MenuPage() {
       <div className="flex justify-center pb-12">
         <button
           type="button"
-          onClick={signout}
+          onClick={() => setOpenLogoutConfirm(true)}
           className="mb-2 text-white flex items-center gap-2 underline"
         >
           <Image
@@ -159,6 +160,16 @@ export default function MenuPage() {
           ออกจากระบบ
         </button>
       </div>
+
+      {/* Logout Confirm Modal */}
+      <ConfirmModal
+        open={openLogoutConfirm}
+        onClose={() => setOpenLogoutConfirm(false)}
+        onConfirm={signout}
+        body="ต้องการออกจากระบบใช่หรือไม่?"
+        cancelText="ยกเลิก"
+        confirmText="ออกจากระบบ"
+      />
 
       {/* Language Modal */}
       <LanguageModal

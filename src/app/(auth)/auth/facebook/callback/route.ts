@@ -199,6 +199,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ตรวจสอบ single-device session
+    const { data: { user: signedInUser } } = await supabase.auth.getUser()
+    if (signedInUser) {
+      const { checkAndRegisterSession } = await import('@/lib/device-session')
+      const result = await checkAndRegisterSession(signedInUser.id)
+      if (result === 'conflict') {
+        await supabase.auth.signOut()
+        const conflictResponse = NextResponse.redirect(new URL('/session-conflict', requestUrl.origin))
+        cookiesToSet.forEach(({ name, value, options }) => {
+          conflictResponse.cookies.set(name, value, options)
+        })
+        return conflictResponse
+      }
+    }
+
     // Create redirect response after sign in
     const response = NextResponse.redirect(new URL('/', requestUrl.origin))
 

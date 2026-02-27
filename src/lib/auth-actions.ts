@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
+import { checkAndRegisterSession, clearDeviceSession } from './device-session'
 
 /* ---------------- Helpers ---------------- */
 
@@ -50,6 +51,16 @@ export async function login(formData: FormData) {
     }
 
     toErrorRedirect('auth_signin_error', error.message ?? 'เกิดข้อผิดพลาดขณะเข้าสู่ระบบ')
+  }
+
+  // ตรวจสอบ single-device session
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const result = await checkAndRegisterSession(user.id)
+    if (result === 'conflict') {
+      await supabase.auth.signOut()
+      redirect('/session-conflict')
+    }
   }
 
   revalidatePath('/', 'layout')
@@ -181,12 +192,23 @@ export async function updatePassword(formData: FormData) {
   }
 
   // ออกจากระบบเพื่อให้ล็อกอินใหม่ด้วยรหัสผ่านใหม่
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
+  if (currentUser) {
+    await clearDeviceSession(currentUser.id)
+  }
   await supabase.auth.signOut()
   redirect('/login?reset=success')
 }
 
 export async function signout() {
   const supabase = await createClient()
+
+  // ลบ device session ก่อน sign out
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    await clearDeviceSession(user.id)
+  }
+
   const { error } = await supabase.auth.signOut()
   if (error) {
     toErrorRedirect('auth_signout_error', error.message ?? 'ออกจากระบบไม่สำเร็จ')

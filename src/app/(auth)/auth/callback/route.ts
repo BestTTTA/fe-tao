@@ -23,6 +23,17 @@ export async function GET(request: NextRequest) {
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!exchangeError) {
+      // ตรวจสอบ single-device session
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { checkAndRegisterSession } = await import('@/lib/device-session') // dynamic ok in route handler
+        const result = await checkAndRegisterSession(user.id)
+        if (result === 'conflict') {
+          await supabase.auth.signOut()
+          return NextResponse.redirect(new URL('/session-conflict', requestUrl.origin))
+        }
+      }
+
       // Successfully authenticated, redirect to the specified path or home
       return NextResponse.redirect(new URL(next, requestUrl.origin))
     }

@@ -2,74 +2,69 @@
 
 import { useEffect, useState } from "react";
 
-/**
- * ShufflingCard — JS-sequenced animation
- * กองซ้อน → คลี่ขวา (stagger) → ค้าง → เก็บกลับ+TOP card overshoot ซ้าย → top card คืน → คลี่ทันที
- * - TOP card = ใบบนสุด (z-index สูงสุด = i = CARD_COUNT-1)
- */
-
 const CARD_COUNT = 10;
 const CARD_W     = 75;
 const CARD_H     = 105;
-const SPREAD     = 230; // px รวม
-const BOUNCE_L   = -12; // px เด้งซ้ายของ anchor
+const SPREAD     = 230;   // total px range of spread
+const STACK_POS  = -115;  // translateX when stacked → centers the spread on screen
+const BOUNCE_OV  = -18;   // overshoot px past stack for TOP card (negative = further left)
 
-// timing (ms)
 const T = {
-  spreadMove:    200,  // ความเร็วคลี่
-  spreadStagger:  70,  // offset ระหว่างใบตอนคลี่
-  spreadHold:    200,  // ค้างที่กาง
-  gatherMove:    200,  // ความเร็วเก็บ
-  gatherStagger:  55,  // offset ระหว่างใบตอนเก็บ
-  gatherHold:    200,  // รอหลังใบสุดท้ายกลับ (ทุกใบกลับครบก่อน)
-  bounceOut:     50,  // เด้งซ้าย
-  bounceHold:     50,  // ค้างที่เด้ง
-  bounceReturn:  160,  // กลับจากเด้ง
-  loopPause:     200,  // พักก่อน loop ใหม่
+  spreadMove:    320,  // duration of spread
+  spreadStagger:  55,  // stagger per card
+  spreadHold:    450,  // hold at spread
+  gatherMove:    280,  // duration of gather
+  gatherStagger:  45,  // stagger per card
+  bounceHold:     70,  // hold at overshoot
+  bounceReturn:  240,  // TOP card springs back
+  loopPause:     120,  // pause before next loop
 } as const;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export default function ShufflingCard({ backUrl }: { backUrl: string }) {
-  const [positions,  setPositions]  = useState<number[]>(Array(CARD_COUNT).fill(0));
-  const [durations,  setDurations]  = useState<number[]>(Array(CARD_COUNT).fill(T.spreadMove));
-  const [delays,     setDelays]     = useState<number[]>(Array(CARD_COUNT).fill(0));
+  const [positions, setPositions] = useState<number[]>(Array(CARD_COUNT).fill(STACK_POS));
+  const [durations, setDurations] = useState<number[]>(Array(CARD_COUNT).fill(T.spreadMove));
+  const [delays,    setDelays]    = useState<number[]>(Array(CARD_COUNT).fill(0));
+  const [easings,   setEasings]   = useState<string[]>(Array(CARD_COUNT).fill("ease-out"));
 
   useEffect(() => {
     let alive = true;
 
     const run = async () => {
       while (alive) {
-        // ── 1. คลี่ขวา (card 0 อยู่กับที่) ──
+        // ── 1. คลี่ออก symmetric รอบ stack (top card นำ) ──
+        setEasings(Array(CARD_COUNT).fill("cubic-bezier(0.22, 1, 0.36, 1)"));
         setDurations(Array(CARD_COUNT).fill(T.spreadMove));
-        // top card (i = CARD_COUNT-1) นำออกก่อน → delay ย้อนกลับ
         setDelays(Array.from({ length: CARD_COUNT }, (_, i) => (CARD_COUNT - 1 - i) * T.spreadStagger));
         setPositions(Array.from({ length: CARD_COUNT }, (_, i) =>
-          (i / (CARD_COUNT - 1)) * SPREAD
+          STACK_POS + (i / (CARD_COUNT - 1)) * SPREAD
         ));
         await sleep((CARD_COUNT - 1) * T.spreadStagger + T.spreadMove + T.spreadHold);
         if (!alive) break;
 
-        // ── 2. เก็บกลับ — cards 0..8 → 0, TOP card (i=9) → BOUNCE_L (overshoot ซ้าย) ──
+        // ── 2. เก็บกลับ (bottom card ก่อน) TOP card overshoot past stack ──
         const TOP = CARD_COUNT - 1;
+        setEasings(Array(CARD_COUNT).fill("cubic-bezier(0.4, 0, 0.2, 1)"));
         setDurations(Array(CARD_COUNT).fill(T.gatherMove));
         setDelays(Array.from({ length: CARD_COUNT }, (_, i) => i * T.gatherStagger));
-        const gatherPos = Array(CARD_COUNT).fill(0);
-        gatherPos[TOP] = BOUNCE_L; // top card overshoot ซ้าย พร้อมกับที่กลับมา
+        const gatherPos = Array(CARD_COUNT).fill(STACK_POS);
+        gatherPos[TOP] = STACK_POS + BOUNCE_OV; // TOP ไปเกินซ้ายนิดนึง
         setPositions(gatherPos);
-        // รอให้ top card (delay ยาวสุด) ถึง BOUNCE_L + ค้างนิดนึง
         await sleep((CARD_COUNT - 1) * T.gatherStagger + T.gatherMove + T.bounceHold);
         if (!alive) break;
 
-        // ── 3. top card คืนจาก BOUNCE_L → 0 ──
+        // ── 3. TOP card สปริงกลับมาที่ stack ──
         const durReturn = Array(CARD_COUNT).fill(0);
         durReturn[TOP] = T.bounceReturn;
+        const easReturn = Array(CARD_COUNT).fill("ease-out");
+        easReturn[TOP] = "cubic-bezier(0.34, 1.56, 0.64, 1)"; // spring bounce
+        setEasings(easReturn);
         setDurations(durReturn);
         setDelays(Array(CARD_COUNT).fill(0));
-        setPositions(Array(CARD_COUNT).fill(0));
-        await sleep(T.bounceReturn);
+        setPositions(Array(CARD_COUNT).fill(STACK_POS));
+        await sleep(T.bounceReturn + T.loopPause);
         if (!alive) break;
-        // ── ไม่มี loopPause — คลี่ออกทันที ──
       }
     };
 
@@ -89,7 +84,7 @@ export default function ShufflingCard({ backUrl }: { backUrl: string }) {
               left: `calc(50% - ${CARD_W / 2}px)`,
               zIndex: i,
               transform: `translateX(${positions[i]}px)`,
-              transition: `transform ${durations[i]}ms ease-in-out ${delays[i]}ms`,
+              transition: `transform ${durations[i]}ms ${easings[i]} ${delays[i]}ms`,
               willChange: "transform",
             }}
           >

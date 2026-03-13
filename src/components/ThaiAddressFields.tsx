@@ -1,34 +1,67 @@
 // components/ThaiAddressFields.tsx
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-// @ts-expect-error – CJS module from react-thailand-address-typeahead-split
-import { resolveResultbyField } from "react-thailand-address-typeahead-split/dist/finder";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import rawData from "@/data/thai-address.json";
 
 export type AddressResult = {
-  d: string; // ตำบล/แขวง
-  a: string; // อำเภอ/เขต
-  p: string; // จังหวัด
-  z: number | string; // รหัสไปรษณีย์
+  district: string;  // ตำบล/แขวง (d)
+  amphoe: string;    // อำเภอ/เขต (a)
+  province: string;  // จังหวัด (p)
+  zipcode: string;   // รหัสไปรษณีย์ (z)
 };
 
-type FieldKey = "d" | "a" | "p" | "z";
-
-const FIELD_META: Record<FieldKey, string> = {
-  d: "ตำบล/แขวง",
-  a: "อำเภอ/เขต",
-  p: "จังหวัด",
-  z: "รหัสไปรษณีย์",
+type RawData = {
+  data: [string, number, [string, number, [string, number, string][]][]][]
 };
 
-interface ThaiAddressFieldProps {
-  fieldKey: FieldKey;
-  value: string;
-  onChange: (value: string) => void;
-  onSelect: (result: AddressResult) => void;
+// Expand compact JSON into flat array once at module level
+const DB: AddressResult[] = (() => {
+  const rows: AddressResult[] = [];
+  for (const [province, , amphoes] of (rawData as RawData).data) {
+    for (const [amphoe, , districts] of amphoes) {
+      for (const [district, , zipcode] of districts) {
+        rows.push({ district, amphoe, province, zipcode: String(zipcode) });
+      }
+    }
+  }
+  return rows;
+})();
+
+type FieldKey = "district" | "amphoe" | "province" | "zipcode";
+
+const FIELD_LABEL: Record<FieldKey, string> = {
+  district: "ตำบล/แขวง",
+  amphoe: "อำเภอ/เขต",
+  province: "จังหวัด",
+  zipcode: "รหัสไปรษณีย์",
+};
+
+function searchDB(field: FieldKey, query: string): AddressResult[] {
+  if (!query) return [];
+  const q = query.toLowerCase();
+  const seen = new Set<string>();
+  const results: AddressResult[] = [];
+  for (const row of DB) {
+    if (results.length >= 10) break;
+    if (!row[field].toLowerCase().startsWith(q)) continue;
+    const key = `${row.district}|${row.amphoe}|${row.province}|${row.zipcode}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      results.push(row);
+    }
+  }
+  return results;
 }
 
-function ThaiAddressField({ fieldKey, value, onChange, onSelect }: ThaiAddressFieldProps) {
+interface FieldProps {
+  fieldKey: FieldKey;
+  value: string;
+  onChange: (v: string) => void;
+  onSelect: (r: AddressResult) => void;
+}
+
+function ThaiAddressField({ fieldKey, value, onChange, onSelect }: FieldProps) {
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<AddressResult[]>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -44,14 +77,9 @@ function ThaiAddressField({ fieldKey, value, onChange, onSelect }: ThaiAddressFi
   const handleChange = useCallback(
     (v: string) => {
       onChange(v);
-      if (v.length >= 1) {
-        const res: AddressResult[] = (resolveResultbyField(fieldKey, v) as AddressResult[]).slice(0, 10);
-        setResults(res);
-        setOpen(res.length > 0);
-      } else {
-        setResults([]);
-        setOpen(false);
-      }
+      const res = searchDB(fieldKey, v);
+      setResults(res);
+      setOpen(res.length > 0);
     },
     [fieldKey, onChange]
   );
@@ -62,16 +90,23 @@ function ThaiAddressField({ fieldKey, value, onChange, onSelect }: ThaiAddressFi
     setResults([]);
   };
 
+  const displayLabel = (r: AddressResult) => {
+    if (fieldKey === "district") return `${r.district} › ${r.amphoe} › ${r.province} ${r.zipcode}`;
+    if (fieldKey === "amphoe") return `${r.amphoe} › ${r.province} ${r.zipcode}`;
+    if (fieldKey === "province") return `${r.province}`;
+    return `${r.zipcode} › ${r.district}, ${r.amphoe}, ${r.province}`;
+  };
+
   return (
     <div ref={wrapRef}>
-      <label className="mb-1 block text-sm text-white/90">{FIELD_META[fieldKey]}</label>
+      <label className="mb-1 block text-sm text-white/90">{FIELD_LABEL[fieldKey]}</label>
       <div className="relative">
         <input
-          type={fieldKey === "z" ? "tel" : "text"}
-          inputMode={fieldKey === "z" ? "numeric" : undefined}
+          type={fieldKey === "zipcode" ? "tel" : "text"}
+          inputMode={fieldKey === "zipcode" ? "numeric" : undefined}
           value={value}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder={FIELD_META[fieldKey]}
+          placeholder={FIELD_LABEL[fieldKey]}
           autoComplete="off"
           className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500"
         />
@@ -83,12 +118,7 @@ function ThaiAddressField({ fieldKey, value, onChange, onSelect }: ThaiAddressFi
                 onMouseDown={() => handleSelect(r)}
                 className="px-4 py-2.5 text-sm text-slate-800 cursor-pointer hover:bg-violet-50 border-b last:border-b-0 border-slate-100"
               >
-                <span className="font-medium">
-                  {fieldKey === "z" ? String(r.z) : r[fieldKey]}
-                </span>
-                <span className="ml-2 text-slate-400">
-                  {r.d} › {r.a} › {r.p} {r.z}
-                </span>
+                {displayLabel(r)}
               </li>
             ))}
           </ul>
@@ -114,36 +144,31 @@ export default function ThaiAddressFields({
   onChange,
 }: ThaiAddressFieldsProps) {
   const handleSelect = (r: AddressResult) => {
-    onChange({
-      subDistrict: r.d,
-      district: r.a,
-      province: r.p,
-      postal: String(r.z),
-    });
+    onChange({ subDistrict: r.district, district: r.amphoe, province: r.province, postal: r.zipcode });
   };
 
   return (
     <div className="space-y-3">
       <ThaiAddressField
-        fieldKey="d"
+        fieldKey="district"
         value={subDistrict}
         onChange={(v) => onChange({ subDistrict: v, district, province, postal })}
         onSelect={handleSelect}
       />
       <ThaiAddressField
-        fieldKey="a"
+        fieldKey="amphoe"
         value={district}
         onChange={(v) => onChange({ subDistrict, district: v, province, postal })}
         onSelect={handleSelect}
       />
       <ThaiAddressField
-        fieldKey="p"
+        fieldKey="province"
         value={province}
         onChange={(v) => onChange({ subDistrict, district, province: v, postal })}
         onSelect={handleSelect}
       />
       <ThaiAddressField
-        fieldKey="z"
+        fieldKey="zipcode"
         value={postal}
         onChange={(v) => onChange({ subDistrict, district, province, postal: v })}
         onSelect={handleSelect}

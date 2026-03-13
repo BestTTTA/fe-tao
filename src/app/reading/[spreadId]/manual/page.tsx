@@ -4,6 +4,8 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
+import ShufflingCard from "@/components/ShufflingCard";
+import { createClient } from "@/utils/supabase/client";
 
 /* ---------- helpers ---------- */
 
@@ -31,9 +33,34 @@ export default function ManualShufflePage() {
 
   const search = useSearchParams();
   const deckId = search.get("deck") ?? "magician-dark";
+  const question = search.get("q") ?? "";
 
-  const backImg = "/card-form/back-card.png";
+  const [cardBackUrl, setCardBackUrl] = useState<string>("/card-form/back-card.png");
   const need = useMemo(() => spreadCountFromId(spreadId), [spreadId]);
+
+  // ดึง deck_back_url จาก supabase เพื่อใช้รูปหลังไพ่ที่ถูกต้อง
+  useEffect(() => {
+    const numericId = Number(deckId);
+    if (!deckId || isNaN(numericId)) return;
+    const supabase = createClient();
+    supabase
+      .from("decks")
+      .select("deck_back_url")
+      .eq("id", numericId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.deck_back_url) {
+          // แทนที่ชื่อไฟล์ท้ายสุดด้วย Back.webp
+          const base = data.deck_back_url.replace(/\/[^/]+$/, "");
+          const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "") ?? "";
+          const backPath = `${base}/Back.webp`;
+          const fullUrl = /^https?:\/\//i.test(backPath)
+            ? backPath
+            : `${supabaseBase}/${backPath.replace(/^\/+/, "")}`;
+          setCardBackUrl(fullUrl);
+        }
+      });
+  }, [deckId]);
 
   const [shuffling, setShuffling] = useState(true);
   const totalCards = 18;
@@ -73,9 +100,7 @@ export default function ManualShufflePage() {
     if (!canConfirm) return;
     const pick = selectedIndexes.join(",");
     router.push(
-      `/reading/${spreadId || "3-card"}/result?deck=${encodeURIComponent(
-        deckId
-      )}&pick=${encodeURIComponent(pick)}`
+      `/reading/${spreadId || "3-card"}/result?deck=${encodeURIComponent(deckId)}&pick=${encodeURIComponent(pick)}&q=${encodeURIComponent(question)}`
     );
   };
 
@@ -96,50 +121,55 @@ export default function ManualShufflePage() {
       />
 
       {/* BG */}
-      <section
-        className="relative h-[100px] sm:h-[120px] w-full overflow-hidden"
-      />
+      <section className="relative h-[100px] sm:h-[120px] w-full overflow-hidden" />
 
-      {/* Content Container - ใช้ flex เพื่อจัดกลางจอ */}
+      {/* Content Container */}
       <div className="relative flex flex-col min-h-[calc(100vh-100px)] sm:min-h-[calc(100vh-120px)]">
         {/* Main Content - Centered */}
         <div className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 pb-32 sm:pb-36">
-          {/* กองไพ่ */}
-          <div className="w-full max-w-md">
-            <DeckStrip
-              backSrc={backImg}
-              total={totalCards}
-              shuffling={shuffling}
-              selected={selectedIndexes}
-              touched={touchedIndex}
-              onPick={pickCard}
-              onTouch={setTouchedIndex}
-            />
-          </div>
-
-          {/* คำอธิบาย */}
-          <div className="mt-6 sm:mt-8 text-center text-sm sm:text-base text-white/90 px-2">
-            {shuffling ? (
-              <div className="flex items-center justify-center gap-2">
+          {shuffling ? (
+            /* ระหว่างสับไพ่: ไพ่ใบเดียวกลางจอพร้อม animation flip */
+            <div className="flex flex-col items-center gap-8">
+              <div className="h-48 w-48 flex items-center justify-center">
+                <ShufflingCard backUrl={cardBackUrl} />
+              </div>
+              <div className="flex items-center justify-center gap-2 text-white/90">
                 <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
                 <span className="text-xs sm:text-sm">กำลังสับไพ่... กดหยุดเมื่อคุณพร้อม</span>
               </div>
-            ) : (
-              <div className="space-y-1">
-                <div className="text-base sm:text-lg font-medium">
-                  เลือกไพ่ {selectedIndexes.length}/{need} ใบ
-                </div>
-                {selectedIndexes.length < need && (
-                  <div className="text-xs sm:text-sm text-white/70">
-                    แตะที่ไพ่เพื่อเลือก
-                  </div>
-                )}
+            </div>
+          ) : (
+            <>
+              {/* กองไพ่ */}
+              <div className="w-full max-w-md">
+                <DeckStrip
+                  backSrc={cardBackUrl}
+                  total={totalCards}
+                  shuffling={false}
+                  selected={selectedIndexes}
+                  touched={touchedIndex}
+                  onPick={pickCard}
+                  onTouch={setTouchedIndex}
+                />
               </div>
-            )}
-          </div>
+
+
+              {/* คำอธิบาย */}
+              <div className="mt-4 sm:mt-5 text-center text-white/90 px-2">
+                <div className="space-y-1">
+                  <div className="text-base sm:text-lg font-medium">
+                    เลือกไพ่ {selectedIndexes.length}/{need} ใบ
+                  </div>
+                  {selectedIndexes.length < need && (
+                    <div className="text-xs sm:text-sm text-white/70">แตะที่ไพ่เพื่อเลือก</div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* แถบปุ่มล่าง - Fixed ที่ด้านล่าง */}
+        {/* แถบปุ่มล่าง */}
         <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pt-4 pb-safe z-50">
           <div className="mx-auto max-w-md px-3 sm:px-4 pb-2 sm:pb-3">
             {shuffling ? (

@@ -1,7 +1,7 @@
 // app/reading/[spreadId]/page.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 
@@ -21,7 +21,8 @@ export default function ReadingQuestionPage() {
   const deckId = search.get("deck") ?? "";
   const [question, setQuestion] = useState("");
 
-  const canContinue = useMemo(() => question.trim().length > 0, [question]);
+  const cardCount = spreadCountFromId(spreadId);
+
 
   const go = (mode: "auto" | "manual") => {
     const q = encodeURIComponent(question.trim());
@@ -65,44 +66,44 @@ export default function ReadingQuestionPage() {
         className="absolute inset-0 -z-10"
  />
 
-      <div className="mx-auto max-w-md px-4 pt-20 pb-28 w-full">
-        <label className="block text-sm font-semibold text-white/90">ระบุเรื่องที่ต้องการดูดวง</label>
-        <textarea
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="กรุณาระบุเรื่องที่ต้องการดูดวง"
-          rows={3}
-          className="mt-2 w-full rounded-lg border border-white/20 bg-white/95 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/40 resize-none"
-        />
+      <div className="mx-auto max-w-md px-4 pt-20 pb-28 w-full flex flex-col items-center text-center gap-4">
+        <h2 className="text-2xl font-bold text-white drop-shadow">
+          วางไพ่แบบ {cardCount} ใบ
+        </h2>
 
-        <p className="mt-3 text-xs text-white/80">
-          สเปรดที่เลือก: <span className="font-semibold">{spreadId}</span>
+        <div className="w-full text-left">
+          <label className="block text-sm font-semibold text-white/90">คำถามหรือเรื่องที่ต้องการดูดวง</label>
+          <textarea
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="เว้นไว้หากไม่ต้องการใส่คำถาม"
+            rows={3}
+            className="mt-2 w-full rounded-lg border border-white/20 bg-white/95 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/40 resize-none"
+          />
+        </div>
+
+        <p className="text-sm text-white/80 italic">
+          กรุณาตั้งสมาธิแล้วนึกถึงเรื่องที่ต้องการถาม
         </p>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-10">
-        <div className="mx-auto max-w-md px-4 pb-4">
-          <div className="rounded-2xl bg-white/90 p-3 text-slate-900 shadow-lg backdrop-blur">
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => go("auto")}
-                disabled={!canContinue}
-                className="rounded-xl border border-slate-300 px-3 py-3 text-sm font-semibold hover:bg-slate-50 disabled:opacity-60"
-              >
-                สับอัตโนมัติ
-              </button>
-              <button
-                onClick={() => go("manual")}
-                disabled={!canContinue}
-                className="rounded-xl bg-botton-main px-3 py-3 text-sm font-semibold text-white hover:bg-violet-800 disabled:opacity-60"
-              >
-                สับไพ่เอง
-              </button>
-            </div>
+        <div className="bg-white rounded-t-3xl shadow-[0_-4px_24px_rgba(0,0,0,0.08)] mx-auto max-w-md px-4 pt-4 pb-6">
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => go("auto")}
+              className="rounded-lg border border-slate-800 bg-white px-3 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+            >
+              สุ่มอัตโนมัติ
+            </button>
+            <button
+              onClick={() => go("manual")}
+              className="rounded-lg border border-slate-800 bg-white px-3 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+            >
+              สับไพ่เอง
+            </button>
           </div>
         </div>
-
-        <div className="pointer-events-none mx-auto mt-2 h-1 w-24 rounded-full bg-white/85" />
       </div>
     </main>
   );

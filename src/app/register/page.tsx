@@ -4,7 +4,7 @@ import Link from "next/link";
 import TransparentHeader from "@/components/TransparentHeader";
 import { signup } from "../../lib/auth-actions";
 import { useFormStatus } from "react-dom";
-import Image from "next/image";
+import SocialLogin from "@/components/SocialLogin";
 
 export default function RegisterPage() {
   const [showPass, setShowPass] = useState(false);
@@ -130,10 +130,9 @@ export default function RegisterPage() {
           </section>
 
           {/* ---------------- ข้อมูลส่วนตัว (ตามภาพตัวอย่าง) ---------------- */}
-          <section className="space-y-4">
+          {/* <section className="space-y-4">
             <h2 className="text-sm font-semibold text-white/90">ข้อมูลโปรไฟล์ของคุณ</h2>
 
-            {/* ชื่อ */}
             <div>
               <label htmlFor="first-name" className="mb-1 block text-sm text-white/90">
                 ชื่อ
@@ -149,7 +148,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* นามสกุล */}
             <div>
               <label htmlFor="last-name" className="mb-1 block text-sm text-white/90">
                 นามสกุล
@@ -165,7 +163,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* ชื่อเล่น */}
             <div>
               <label htmlFor="nick_name" className="mb-1 block text-sm text-white/90">
                 ชื่อเล่น
@@ -179,7 +176,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* เบอร์โทรศัพท์ */}
             <div>
               <label htmlFor="phone" className="mb-1 block text-sm text-white/90">
                 เบอร์โทรศัพท์
@@ -195,9 +191,7 @@ export default function RegisterPage() {
                 className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3"
               />
             </div>
-
-            
-          </section>
+          </section> */}
 
           {/* ---------------- ข้อมูลที่จะแสดงในรูปภาพที่แชร์ ---------------- */}
           
@@ -241,23 +235,7 @@ export default function RegisterPage() {
               <div className="h-px flex-1 bg-white/20" />
             </div>
 
-            <div className="text-center">
-              <div className="text-sm text-white/80">เข้าสู่ระบบด้วย Social Network</div>
-              <div className="mt-3 flex items-center justify-center gap-4">
-                <SocialButton ariaLabel="Login with Facebook">
-                  <FbIcon />
-                </SocialButton>
-                <SocialButton ariaLabel="Login with LINE">
-                  <LineIcon />
-                </SocialButton>
-                <SocialButton ariaLabel="Login with Google">
-                  <GoogleIcon />
-                </SocialButton>
-                <SocialButton ariaLabel="Login with Apple">
-                  <AppleIcon />
-                </SocialButton>
-              </div>
-            </div>
+            <SocialLogin />
           </section>
 
           {/* Error */}
@@ -298,25 +276,6 @@ function BottomBar() {
   );
 }
 
-/* ---------- Small helpers ---------- */
-function SocialButton({
-  children,
-  ariaLabel,
-}: {
-  children: React.ReactNode;
-  ariaLabel: string;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      className="grid h-10 w-10 place-items-center bg-white rounded-full text-slate-900 shadow ring-1 ring-black/5 hover:brightness-95"
-    >
-      {children}
-    </button>
-  );
-}
-
 /* Icons */
 function EyeIcon() {
   return (
@@ -334,26 +293,5 @@ function EyeOffIcon() {
       <path d="M16.88 13.12a10.94 10.94 0 0 0 3.12-1.12s-4-7-10-7a10.94 10.94 0 0 0-3.12 1.12" />
       <path d="M6.1 6.1A10.94 10.94 0 0 0 2 12s4 7 10 7a10.94 10.94 0 0 0 5.9-1.9" />
     </svg>
-  );
-}
-/* ---------- Icons ---------- */
-function FbIcon() {
-  return (
-  <Image src="/icons/facebook.png" alt="Facebook" width={40} height={40} />
-  );
-}
-function LineIcon() {
-  return (
-  <Image src="/icons/line.png" alt="LINE" width={40} height={40} />
-  );
-}
-function GoogleIcon() {
-  return (
-  <Image src="/icons/gmail.png" alt="Google" width={40} height={40} />
-  );
-}
-function AppleIcon() {
-  return (
-  <Image src="/icons/apple.png" alt="Apple" width={40} height={40} />
   );
 }

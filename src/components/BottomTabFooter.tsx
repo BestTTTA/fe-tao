@@ -23,7 +23,7 @@ export default function BottomTabFooter({
   onCards,
   onAccount,
   className = "",
-  labels = { home: "หน้าแรก", cards: "เปิดไพ่", account: "บัญชี" },
+  labels = { home: "หน้าแรก", cards: "เปิดไพ่", account: "โปรไฟล์" },
 }: FooterProps) {
   const router = useRouter();
 
@@ -36,7 +36,7 @@ export default function BottomTabFooter({
     if (onCards) return onCards();
   };
   const goAccount = () => {
-    if (accountPath) return router.push("/menu");
+    if (accountPath) return router.push("/menu/profile");
     if (onAccount) return onAccount();
   };
 

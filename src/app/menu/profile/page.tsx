@@ -13,7 +13,9 @@ import {
 
 type UserProfile = {
   id: string;
-  plan_type: string;
+  plan_type: string | null;
+  plan_status: string | null;
+  plan_current_period_end: string | null;
   stripe_customer_id?: string;
   full_name: string;
   nick_name?: string;
@@ -220,26 +222,7 @@ export default function AccountProfilePage() {
           </div>
 
           {/* แพ็กเกจ */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-slate-500">แพ็กเกจของคุณ</div>
-                <div className="text-lg font-semibold text-slate-900">
-                  {user.plan_type || "Freemium"}
-                </div>
-              </div>
-          
-              {user.plan_type !== "VIP" && (
-                <button
-                  type="button"
-                  onClick={() => router.push("/packages")}
-                  className="rounded-md bg-amber-400 px-3 py-1 text-xs font-bold text-slate-900 hover:bg-amber-300"
-                >
-                  สมัคร VIP
-                </button>
-              )}
-            </div>
-          </div>
+          <PlanSection user={user} onUpgrade={() => router.push("/packages")} />
 
 
           <Divider />
@@ -273,6 +256,55 @@ export default function AccountProfilePage() {
 }
 
 /* ---------- UI Partials ---------- */
+
+function PlanSection({
+  user,
+  onUpgrade,
+}: {
+  user: UserProfile;
+  onUpgrade: () => void;
+}) {
+  const isVip =
+    (user.plan_type === "MONTH" || user.plan_type === "YEAR") &&
+    (user.plan_status === "active" || user.plan_status === "trialing");
+
+  const planLabel =
+    user.plan_type === "MONTH" ? "VIP รายเดือน"
+    : user.plan_type === "YEAR" ? "VIP รายปี"
+    : "Freemium";
+
+  const expiryDate =
+    isVip && user.plan_current_period_end
+      ? new Date(user.plan_current_period_end).toLocaleDateString("th-TH", {
+          year: "numeric", month: "long", day: "numeric",
+        })
+      : null;
+
+  return (
+    <div className="mb-4 flex items-center justify-between">
+      <div>
+        <div className="text-sm text-slate-500">แพ็คเก็จของคุณ</div>
+        <div className="text-lg font-bold text-slate-900">{planLabel}</div>
+        {expiryDate && (
+          <div className="text-xs text-slate-500">หมดอายุ {expiryDate}</div>
+        )}
+      </div>
+      {isVip ? (
+        <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-900">
+          VIP
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={onUpgrade}
+          className="rounded-md bg-amber-400 px-3 py-1.5 text-xs font-bold text-slate-900 hover:bg-amber-300"
+        >
+          สมัคร VIP
+        </button>
+      )}
+    </div>
+  );
+}
 
 function Divider() {
   return <div className="my-2 h-px w-full bg-slate-200" />;

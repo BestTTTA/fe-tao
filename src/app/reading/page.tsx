@@ -35,6 +35,11 @@ type Profile = {
 
 const mapSpreadId = (id: string) => (id === "12-circle" ? "12circle" : `${id}-card`);
 
+// spreads ที่ VIP เข้าถึงได้
+const VIP_SPREADS  = ["1", "2", "3", "6", "10", "12"];
+// spreads ที่ใช้ได้ฟรี
+const FREE_SPREADS = ["1", "2", "3"];
+
 export default function ReadingSelectPage() {
   return (
     <Suspense
@@ -119,15 +124,23 @@ function ReadingContent() {
     return () => { mounted = false; };
   }, [supabase]);
 
-  // รายการสเปรดตามสิทธิ์
-  const spreads = useMemo<Spread[]>(() => {
-    if (isVip) return BASE_SPREADS;
-    return BASE_SPREADS.filter((s) => ["1", "2", "3"].includes(s.id));
+  // VIP: เห็นแค่ VIP_SPREADS | Non-VIP: เห็นทั้งหมด
+  const visibleSpreads = useMemo<Spread[]>(() => {
+    if (isVip) return BASE_SPREADS.filter((s) => VIP_SPREADS.includes(s.id));
+    return BASE_SPREADS;
   }, [isVip]);
 
-  const goNext = (spreadId: string, disabled: boolean) => {
-    if (disabled) return;
-    router.push(`/reading/${mapSpreadId(spreadId)}?deck=${encodeURIComponent(deckId)}`);
+  const goNext = (spreadId: string) => {
+    if (isVip) {
+      // VIP เข้าถึงได้ทุก spread ใน VIP_SPREADS (list ถูก filter แล้ว)
+      router.push(`/reading/${mapSpreadId(spreadId)}?deck=${encodeURIComponent(deckId)}`);
+    } else if (FREE_SPREADS.includes(spreadId)) {
+      // Non-VIP เลือก free spread ได้เลย
+      router.push(`/reading/${mapSpreadId(spreadId)}?deck=${encodeURIComponent(deckId)}`);
+    } else {
+      // Non-VIP กด VIP spread → ไปหน้าสมัคร
+      router.push("/packages");
+    }
   };
 
   return (
@@ -166,19 +179,15 @@ function ReadingContent() {
           </div>
         ) : (
           <div className="mt-4 space-y-3">
-            {/* 1–3 (เสมอ) */}
-            {BASE_SPREADS.filter((s) => ["1", "2", "3"].includes(s.id)).map((s) => (
-              <SpreadItem key={s.id} spread={s} onClick={() => goNext(s.id, false)} />
-            ))}
-            {/* VIP ส่วนที่เหลือ */}
-            {BASE_SPREADS.filter((s) => !["1", "2", "3"].includes(s.id)).map((s) => {
-              const disabled = !isVip;
+            {visibleSpreads.map((s) => {
+              const needsVip = !FREE_SPREADS.includes(s.id);
+              const showVipTag = !isVip && needsVip;
               return (
                 <SpreadItem
                   key={s.id}
                   spread={s}
-                  disabled={disabled}
-                  onClick={() => goNext(s.id, disabled)}
+                  showVipTag={showVipTag}
+                  onClick={() => goNext(s.id)}
                 />
               );
             })}
@@ -194,15 +203,12 @@ function ReadingContent() {
 }
 
 function SpreadItem({
-  spread, disabled = false, onClick,
-}: { spread: Spread; disabled?: boolean; onClick: () => void }) {
+  spread, showVipTag = false, onClick,
+}: { spread: Spread; showVipTag?: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
-      className={`flex w-full items-stretch gap-3 rounded-3xl p-3 text-left ring-1 backdrop-blur
-        ${disabled ? "bg-white/5 ring-white/10 opacity-70 cursor-not-allowed"
-                   : "bg-white/10 ring-white/15 hover:bg-white/15"}`}
+      className="flex w-full items-stretch gap-3 rounded-3xl p-3 text-left ring-1 backdrop-blur bg-white/10 ring-white/15 hover:bg-white/15 active:scale-[0.98] transition-transform"
     >
       <div className="grid place-items-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -214,16 +220,19 @@ function SpreadItem({
           className="h-[84px] w-[84px] rounded-2xl object-contain bg-white/10 ring-1 ring-white/20"
         />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col justify-center">
         <div className="text-[15px] font-bold flex items-center gap-2">
           {spread.title}
-          {disabled && (
-            <span className="rounded-full bg-violet-300/90 px-2 py-[2px] text-[10px] font-extrabold text-violet-900">
+          {showVipTag && (
+            <span className="rounded-full bg-amber-400 px-2 py-[2px] text-[10px] font-extrabold text-amber-900">
               VIP
             </span>
           )}
         </div>
         <p className="mt-1 line-clamp-3 text-[13px] leading-6 text-white/90">{spread.description}</p>
+        {showVipTag && (
+          <p className="mt-1 text-[11px] text-amber-300">กดเพื่อสมัคร VIP</p>
+        )}
       </div>
     </button>
   );

@@ -149,25 +149,33 @@ export async function GET(request: NextRequest) {
         })
 
         if (signUpError) {
-          // If rate limited, the user was probably already created - try to sign in
-          if (signUpError.status === 429) {
-            console.log('Rate limited during signup, attempting sign in...')
-            await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
-            const { error: retrySignInError } = await supabase.auth.signInWithPassword({
-              email,
-              password: process.env.LINE_DEFAULT_PASSWORD!,
-            })
-            if (retrySignInError && !retrySignInError.message?.includes('not confirmed')) {
-              console.error('Sign in after rate limit failed:', retrySignInError)
-              throw new Error('Account may exist but sign in failed. Please try again in a few moments.')
-            }
-            // If email not confirmed, continue anyway (LINE users don't need email confirmation)
-          } else {
-            throw signUpError
-          }
+          throw signUpError
         }
-        // After signup, user session is automatically created, no need to sign in
-        console.log('LINE user signed up successfully')
+
+        // LINE user ไม่มี email จริง → ต้อง confirm email ด้วย admin ทันที
+        const { createClient: createServiceClient } = await import('@supabase/supabase-js')
+        const supabaseAdmin = createServiceClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          { auth: { autoRefreshToken: false, persistSession: false } }
+        )
+        const { data: userData } = await supabaseAdmin.auth.admin.listUsers()
+        const newUser = userData?.users?.find(u => u.email === email || u.user_metadata?.line_user_id === profile.userId)
+        if (newUser) {
+          await supabaseAdmin.auth.admin.updateUserById(newUser.id, { email_confirm: true })
+          console.log('Email auto-confirmed for new LINE user:', newUser.id)
+        }
+
+        // Sign in หลัง confirm
+        const { error: postSignupSignInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: process.env.LINE_DEFAULT_PASSWORD!,
+        })
+        if (postSignupSignInError) {
+          console.error('Sign in after signup failed:', postSignupSignInError)
+          throw postSignupSignInError
+        }
+        console.log('LINE user signed up and signed in successfully')
       } else if (signInError && signInError.message?.includes('not confirmed')) {
         // Email not confirmed - for LINE users, we'll update their email verification status
         console.log('LINE user exists but email not confirmed, manually confirming...')

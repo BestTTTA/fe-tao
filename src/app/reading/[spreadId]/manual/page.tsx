@@ -36,13 +36,16 @@ export default function ManualShufflePage() {
   const question = search.get("q") ?? "";
 
   const [cardBackUrl, setCardBackUrl] = useState<string>("/card-form/back-card.png");
+  const [totalCards, setTotalCards] = useState(0);
   const need = useMemo(() => spreadCountFromId(spreadId), [spreadId]);
 
-  // ดึง deck_back_url จาก supabase เพื่อใช้รูปหลังไพ่ที่ถูกต้อง
+  // ดึง deck_back_url + จำนวนไพ่จริงจาก supabase
   useEffect(() => {
     const numericId = Number(deckId);
     if (!deckId || isNaN(numericId)) return;
     const supabase = createClient();
+
+    // ดึง deck back url
     supabase
       .from("decks")
       .select("deck_back_url")
@@ -50,7 +53,6 @@ export default function ManualShufflePage() {
       .maybeSingle()
       .then(({ data }) => {
         if (data?.deck_back_url) {
-          // แทนที่ชื่อไฟล์ท้ายสุดด้วย Back.webp
           const base = data.deck_back_url.replace(/\/[^/]+$/, "");
           const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "") ?? "";
           const backPath = `${base}/Back.webp`;
@@ -60,12 +62,19 @@ export default function ManualShufflePage() {
           setCardBackUrl(fullUrl);
         }
       });
+
+    // ดึงจำนวนไพ่ทั้งหมดใน deck
+    supabase
+      .from("cards")
+      .select("id", { count: "exact", head: true })
+      .eq("deck_id", numericId)
+      .then(({ count }) => {
+        setTotalCards(count ?? 0);
+      });
   }, [deckId]);
 
   const [shuffling, setShuffling] = useState(true);
-  const totalCards = 18;
   const [selectedIndexes, setSelected] = useState<number[]>([]);
-  const [touchedIndex, setTouchedIndex] = useState<number | null>(null);
   const canConfirm = selectedIndexes.length === need;
 
   // ไม่มี auto-stop แล้ว - ให้สับไปเรื่อยๆ จนกว่าจะกดหยุด
@@ -83,7 +92,6 @@ export default function ManualShufflePage() {
 
   const resetPick = () => {
     setSelected([]);
-    setTouchedIndex(null);
   };
 
   const autoPick = () => {
@@ -140,22 +148,8 @@ export default function ManualShufflePage() {
             </div>
           ) : (
             <>
-              {/* กองไพ่ */}
-              <div className="w-full max-w-md">
-                <DeckStrip
-                  backSrc={cardBackUrl}
-                  total={totalCards}
-                  shuffling={false}
-                  selected={selectedIndexes}
-                  touched={touchedIndex}
-                  onPick={pickCard}
-                  onTouch={setTouchedIndex}
-                />
-              </div>
-
-
               {/* คำอธิบาย */}
-              <div className="mt-4 sm:mt-5 text-center text-white/90 px-2">
+              <div className="mb-3 sm:mb-4 text-center text-white/90 px-2">
                 <div className="space-y-1">
                   <div className="text-base sm:text-lg font-medium">
                     เลือกไพ่ {selectedIndexes.length}/{need} ใบ
@@ -164,6 +158,16 @@ export default function ManualShufflePage() {
                     <div className="text-xs sm:text-sm text-white/70">แตะที่ไพ่เพื่อเลือก</div>
                   )}
                 </div>
+              </div>
+
+              {/* กองไพ่ซ้อน */}
+              <div className="w-full max-w-md">
+                <DeckStrip
+                  backSrc={cardBackUrl}
+                  total={totalCards}
+                  selected={selectedIndexes}
+                  onPick={pickCard}
+                />
               </div>
             </>
           )}
@@ -213,118 +217,77 @@ export default function ManualShufflePage() {
   );
 }
 
-/* ============== UI: กองไพ่ซ้อน + อนิเมชันสับไพ่ ============== */
+/* ============== UI: กองไพ่ซ้อน ============== */
 function DeckStrip({
   backSrc,
   total,
-  shuffling,
   selected,
-  touched,
   onPick,
-  onTouch,
 }: {
   backSrc: string;
   total: number;
-  shuffling: boolean;
   selected: number[];
-  touched: number | null;
   onPick: (i: number) => void;
-  onTouch: (i: number | null) => void;
 }) {
-  const glowRef = useRef<HTMLDivElement>(null);
-  const [glowPosition, setGlowPosition] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerW, setContainerW] = useState(0);
 
-  // อนิเมชัน glow เคลื่อนที่ - วนลูปไปเรื่อยๆ
+  // วัดความกว้าง container เพื่อคำนวณ overlap ให้เต็มจอ
   useEffect(() => {
-    if (!shuffling) return;
-    
-    let frame = 0;
-    const animate = () => {
-      frame++;
-      setGlowPosition((frame * 2) % 100);
-      requestAnimationFrame(animate);
-    };
-    
-    const id = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(id);
-  }, [shuffling]);
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerW(entry.contentRect.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-  // ระยะเหลื่อมที่เหมาะกับมือถือ - ซ้อนมากขึ้น
-  const overlap = 50;
+  // ขนาดการ์ด: w-16 = 64px (mobile), sm:w-24 = 96px (desktop)
+  const cardW = typeof window !== "undefined" && window.innerWidth >= 640 ? 96 : 64;
 
-  const handleTouchStart = (i: number) => {
-    if (!shuffling && !selected.includes(i)) {
-      onTouch(i);
-    }
-  };
+  // แบ่งไพ่เป็นแถว แถวละ 10 ใบ
+  const perRow = 10;
+  const rows: number[][] = [];
+  for (let i = 0; i < total; i += perRow) {
+    rows.push(Array.from({ length: Math.min(perRow, total - i) }, (_, j) => i + j));
+  }
 
-  const handleTouchEnd = () => {
-    onTouch(null);
+  // คำนวณ overlap ให้ไพ่ขยายเกือบเต็ม container
+  const calcOverlap = (count: number) => {
+    if (count <= 1 || !containerW) return 0;
+    // totalWidth = cardW + (count-1) * (cardW - overlap) = count*cardW - (count-1)*overlap
+    // overlap = (count * cardW - containerW) / (count - 1)
+    const needed = (count * cardW - containerW) / (count - 1);
+    // จำกัดไม่ให้ overlap มากกว่าความกว้างการ์ด - 8px (เผยอย่างน้อย 8px)
+    return Math.max(0, Math.min(needed, cardW - 8));
   };
 
   return (
-    <div className="relative w-full max-w-full overflow-visible">
-      {/* glow effect ตอนสับ */}
-      {shuffling && (
-        <div
-          ref={glowRef}
-          className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 z-30"
-        >
-          <div 
-            className="h-0.5 sm:h-1 w-full overflow-hidden"
-            style={{
-              background: 'linear-gradient(90deg, transparent 0%, rgba(251,191,36,0.8) 50%, transparent 100%)',
-              backgroundSize: '200% 100%',
-              backgroundPosition: `${glowPosition}% 0`,
-            }}
-          />
-          <div 
-            className="mx-auto mt-[-6px] sm:mt-[-8px] h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-amber-400 blur-sm"
-            style={{
-              boxShadow: '0 0 15px rgba(251,191,36,0.9), 0 0 30px rgba(251,191,36,0.6)',
-              marginLeft: `${glowPosition}%`,
-              transition: 'margin-left 0.05s linear',
-            }}
-          />
-        </div>
-      )}
-
-      {/* กองไพ่แบบซ้อน - Responsive */}
-      <div className="flex justify-center overflow-visible">
-        <div className="relative">
-          <div className="flex items-end justify-center">
-            {Array.from({ length: total }).map((_, i) => {
+    <div ref={containerRef} className="relative w-full overflow-visible">
+      <div className="flex flex-col items-center gap-3 overflow-visible">
+        {rows.map((row, rowIdx) => {
+          const rowOverlap = calcOverlap(row.length);
+          return (
+          <div key={rowIdx} className="flex items-end justify-center overflow-visible">
+            {row.map((i, colIdx) => {
               const chosen = selected.includes(i);
-              const isTouched = touched === i && !shuffling && !chosen;
-              const selectionOrder = selected.indexOf(i);
-              
+
               return (
                 <button
                   key={i}
                   onClick={() => onPick(i)}
-                  onTouchStart={() => handleTouchStart(i)}
-                  onTouchEnd={handleTouchEnd}
-                  disabled={shuffling || chosen}
+                  disabled={chosen}
                   className={[
-                    // ขนาดการ์ดปรับตามหน้าจอ
-                    "relative h-24 w-16 xs:h-28 xs:w-20 sm:h-32 sm:w-24 rounded-md sm:rounded-lg overflow-hidden",
-                    shuffling ? "shuffle-card" : "",
-                    chosen ? "z-20 selected-card" : isTouched ? "z-20 touch-card" : "z-10",
+                    "relative h-24 w-16 sm:h-32 sm:w-24 rounded-md sm:rounded-lg overflow-hidden z-10",
                     "transition-all duration-200 ease-out",
-                    !shuffling && !chosen ? "active:scale-95" : "",
                   ].join(" ")}
                   style={{
-                    marginLeft: i > 0 ? -overlap : 0,
-                    animationDelay: shuffling ? `${i * 60}ms` : undefined,
-                    // เปลี่ยนจาก scale และ rotate เป็นแค่เลื่อนขึ้นเล็กน้อย
-                    transform: chosen 
-                      ? 'translateY(-8px)'
-                      : isTouched 
-                      ? 'translateY(-6px) scale(1.04)' 
-                      : 'translateY(0) scale(1)',
+                    marginLeft: colIdx > 0 ? -rowOverlap : 0,
+                    transform: chosen ? "translateY(-6px)" : undefined,
                   }}
                 >
-                  {/* Card image */}
+                  {/* Card back image */}
                   <div className="absolute inset-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -336,110 +299,23 @@ function DeckStrip({
                   </div>
 
                   {/* Ring effect */}
-                  <div 
-                    className={[
-                      "absolute inset-0 rounded-md sm:rounded-lg pointer-events-none transition-all duration-200",
-                      chosen 
-                        ? "ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]" 
-                        : isTouched 
-                        ? "ring-2 ring-white/60 shadow-[0_0_8px_rgba(255,255,255,0.4)]" 
-                        : "ring-1 ring-white/15"
-                    ].join(" ")}
+                  <div
+                    className="absolute inset-0 rounded-md sm:rounded-lg pointer-events-none ring-1 ring-white/15"
                   />
-
-                  {/* Selection number badge - ขนาดเล็กลงสำหรับมือถือ */}
-                  {chosen && (
-                    <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 z-40 h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-[10px] sm:text-xs font-bold text-slate-900 shadow-lg animate-scale-in">
-                      {selectionOrder + 1}
-                    </div>
-                  )}
-
-                  {/* Touch feedback overlay */}
-                  {isTouched && (
-                    <div className="absolute inset-0 bg-white/15 rounded-md sm:rounded-lg pointer-events-none" />
-                  )}
                 </button>
               );
             })}
           </div>
-        </div>
+          );
+        })}
       </div>
 
-      {/* keyframes - ปรับให้เหมาะกับมือถือ */}
+      {/* keyframes */}
       <style jsx global>{`
-        @keyframes tarot-shuffle {
-          0%   { transform: translateY(0) rotate(0deg) scale(1); }
-          20%  { transform: translateY(-6px) rotate(-0.8deg) scale(1.015); }
-          40%  { transform: translateY(-3px) rotate(0.6deg) scale(1.01); }
-          60%  { transform: translateY(-5px) rotate(-0.5deg) scale(1.015); }
-          80%  { transform: translateY(-2px) rotate(0.3deg) scale(1.01); }
-          100% { transform: translateY(0) rotate(0deg) scale(1); }
-        }
-        
-        .shuffle-card {
-          animation: tarot-shuffle 1000ms ease-in-out infinite;
-        }
-
-        .selected-card {
-          animation: card-select-subtle 250ms ease-out forwards;
-        }
-
-        @keyframes card-select-subtle {
-          0% { 
-            transform: translateY(0);
-          }
-          50% { 
-            transform: translateY(-12px);
-          }
-          100% { 
-            transform: translateY(-8px);
-          }
-        }
-
-        .touch-card {
-          animation: card-touch 150ms ease-out forwards;
-        }
-
-        @keyframes card-touch {
-          0% { 
-            transform: translateY(0) scale(1);
-          }
-          100% { 
-            transform: translateY(-6px) scale(1.04);
-          }
-        }
-
-        @keyframes scale-in {
-          0% { 
-            transform: scale(0) rotate(-180deg);
-            opacity: 0;
-          }
-          50% {
-            transform: scale(1.15) rotate(0deg);
-          }
-          100% { 
-            transform: scale(1) rotate(0deg);
-            opacity: 1;
-          }
-        }
-
-        .animate-scale-in {
-          animation: scale-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-
         /* Safe area สำหรับ iPhone */
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
           .pb-safe {
             padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-          }
-        }
-
-        /* ปรับ breakpoint สำหรับหน้าจอเล็ก */
-        @media (max-width: 374px) {
-          .shuffle-card,
-          .selected-card,
-          .touch-card {
-            animation-duration: 2000ms;
           }
         }
       `}</style>

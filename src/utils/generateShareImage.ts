@@ -193,24 +193,27 @@ export async function generateShareImage(opts: GenerateShareImageOptions): Promi
     ctx.fillText(profileName, profileCx, profileCy + profileR + 38);
   }
 
-  // --- 6. Social icons: split left / right around avatar ---
+  // --- 6. Social icons: โค้งลงจาก avatar ซ้าย-ขวา ---
   const validSocials = socials
     .map((s, i) => ({ ...s, img: socialImgs[i] }))
     .filter(s => s.handle.trim());
 
-  const iconSize = 52;
-  const iconGap = 16;
-  const avatarEdgeGap = 24;
+  const iconSize = 48;
+  const iconGap = 12;
+  const avatarEdgeGap = 20;
+  // ระยะ Y ที่เลื่อนลงต่อ icon (สร้างเอฟเฟกต์โค้ง)
+  const curveStep = 30;
 
   const leftCount = Math.ceil(validSocials.length / 2);
   const leftSocials = validSocials.slice(0, leftCount);
   const rightSocials = validSocials.slice(leftCount);
 
-  // Left socials: rightmost is nearest to avatar, draw right→left
+  // Left socials: ตัวใกล้ avatar อยู่สูง ตัวไกลลาดลงมา
   let lrx = profileCx - profileR - avatarEdgeGap;
-  for (const s of [...leftSocials].reverse()) {
+  for (let si = 0; si < leftSocials.length; si++) {
+    const s = leftSocials[leftSocials.length - 1 - si]; // วาดจากใกล้ avatar ออก
     const ix = lrx - iconSize;
-    const iy = profileCy - iconSize / 2;
+    const iy = profileCy - iconSize / 2 + curveStep * si;
     if (s.img) {
       ctx.save();
       ctx.beginPath();
@@ -221,16 +224,17 @@ export async function generateShareImage(opts: GenerateShareImageOptions): Promi
     }
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
-    ctx.font = `20px "Noto Sans Thai", "Sarabun", sans-serif`;
-    ctx.fillText(s.handle, ix + iconSize / 2, iy + iconSize + 26);
+    ctx.font = `18px "Noto Sans Thai", "Sarabun", sans-serif`;
+    ctx.fillText(s.handle, ix + iconSize / 2, iy + iconSize + 22);
     lrx = ix - iconGap;
   }
 
-  // Right socials: leftmost is nearest to avatar, draw left→right
+  // Right socials: ตัวใกล้ avatar อยู่สูง ตัวไกลลาดลงมา
   let rlx = profileCx + profileR + avatarEdgeGap;
-  for (const s of rightSocials) {
+  for (let si = 0; si < rightSocials.length; si++) {
+    const s = rightSocials[si];
     const ix = rlx;
-    const iy = profileCy - iconSize / 2;
+    const iy = profileCy - iconSize / 2 + curveStep * si;
     if (s.img) {
       ctx.save();
       ctx.beginPath();
@@ -241,8 +245,8 @@ export async function generateShareImage(opts: GenerateShareImageOptions): Promi
     }
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
-    ctx.font = `20px "Noto Sans Thai", "Sarabun", sans-serif`;
-    ctx.fillText(s.handle, ix + iconSize / 2, iy + iconSize + 26);
+    ctx.font = `18px "Noto Sans Thai", "Sarabun", sans-serif`;
+    ctx.fillText(s.handle, ix + iconSize / 2, iy + iconSize + 22);
     rlx = ix + iconSize + iconGap;
   }
 

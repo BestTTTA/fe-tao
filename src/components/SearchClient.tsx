@@ -3,7 +3,7 @@
 /* ---------------------------------------------- */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 import { createClient } from "@/utils/supabase/client";
@@ -14,33 +14,46 @@ type ResultItem =
       kind: "card";
       id: number;
       deck_id: number | null;
-      title: string; // card_name
-      subtitle?: string; // deck_name หรือคำอธิบายอื่น
+      title: string;
+      deckName?: string;
+      describe?: string;
+      subtitle?: string;
+      image?: string | null;
+      locked?: boolean;
     }
   | {
       kind: "deck";
       id: number;
-      title: string; // deck_name
-      subtitle?: string; // detail
+      title: string;
+      subtitle?: string;
+      image?: string | null;
+      free?: boolean;
     };
 
 type CardRow = {
   id: number;
   deck_id: number | null;
   card_name: string;
+  card_url: string | null;
   describe: string | null;
   work_meaning: string | null;
   money_meaning: string | null;
   relation: string | null;
-  decks?: { id: number; deck_name: string } | null; // <- normalize แล้ว
+  decks?: { id: number; deck_name: string; free: boolean } | null;
 };
 
-// ชนิด “ดิบ” จาก Supabase (decks อาจเป็น object หรือ array)
 type SupaCardRow = Omit<CardRow, "decks"> & {
-  decks?: { id: number; deck_name: string } | { id: number; deck_name: string }[] | null;
+  decks?: { id: number; deck_name: string; free: boolean } | { id: number; deck_name: string; free: boolean }[] | null;
 };
 
-type DeckRow = { id: number; deck_name: string; detail: string | null };
+type DeckRow = { id: number; deck_name: string; deck_url: string | null; detail: string | null; free: boolean };
+
+const toPublicUrl = (p?: string | null) => {
+  if (!p) return null;
+  if (/^https?:\/\//i.test(p)) return p;
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  return `${base.replace(/\/+$/, "")}/${p.replace(/^\/+/, "")}`;
+};
 
 export default function SearchClient() {
   const router = useRouter();
@@ -52,17 +65,26 @@ export default function SearchClient() {
   const [focused, setFocused] = useState(false);
   const [results, setResults] = useState<ResultItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isVip, setIsVip] = useState(false);
 
-  // filter ฝั่ง client สำหรับผลลัพธ์ที่ดึงมาแล้ว (เผื่อใช้งานภายหลัง)
-  const filtered = useMemo(() => {
-    const k = q.trim().toLowerCase();
-    if (!k) return [];
-    return results.filter(
-      (r) =>
-        r.title.toLowerCase().includes(k) ||
-        (r.subtitle ? r.subtitle.toLowerCase().includes(k) : false)
-    );
-  }, [q, results]);
+  // ดึงสถานะ VIP ของ user
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("plan_type, plan_status")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile) {
+        const vip =
+          (profile.plan_type === "MONTH" || profile.plan_type === "YEAR") &&
+          (profile.plan_status === "active" || profile.plan_status === "trialing");
+        setIsVip(vip);
+      }
+    })();
+  }, [supabase]);
 
   // sync URL ?q=
   useEffect(() => {
@@ -91,7 +113,7 @@ export default function SearchClient() {
         // ---- ค้นหา DECKS ----
         const decksPromise = supabase
           .from("decks")
-          .select("id, deck_name, detail")
+          .select("id, deck_name, deck_url, detail, free")
           .or(`deck_name.ilike.${like},detail.ilike.${like}`)
           .limit(10)
           .returns<DeckRow[]>();
@@ -100,7 +122,7 @@ export default function SearchClient() {
         const cardsPromise = supabase
           .from("cards")
           .select(
-            "id, deck_id, card_name, describe, work_meaning, money_meaning, relation, decks(id,deck_name)"
+            "id, deck_id, card_name, card_url, describe, work_meaning, money_meaning, relation, decks(id,deck_name,free)"
           )
           .or(
             [
@@ -126,19 +148,23 @@ export default function SearchClient() {
             id: d.id,
             title: d.deck_name,
             subtitle: d.detail ?? undefined,
+            image: toPublicUrl(d.deck_url),
+            free: d.free,
           }));
 
-        // normalize decks relation: array -> object ตัวแรก, object -> ใช้ตรง ๆ, undefined -> null
         const cardItems: ResultItem[] =
           (cards ?? []).map((c) => {
             const deckRef =
               Array.isArray(c.decks) ? (c.decks[0] ?? null) : c.decks ?? null;
+            const deckFree = deckRef?.free ?? true;
 
             return {
               kind: "card" as const,
               id: c.id,
               deck_id: c.deck_id ?? null,
               title: c.card_name,
+              deckName: deckRef?.deck_name ?? undefined,
+              describe: c.describe ?? undefined,
               subtitle:
                 deckRef?.deck_name ??
                 c.describe ??
@@ -146,6 +172,8 @@ export default function SearchClient() {
                 c.money_meaning ??
                 c.relation ??
                 undefined,
+              image: toPublicUrl(c.card_url),
+              locked: !deckFree && !isVip,
             };
           });
 
@@ -159,19 +187,26 @@ export default function SearchClient() {
     }, 250);
 
     return () => clearTimeout(handle);
-  }, [q, supabase]);
+  }, [q, supabase, isVip]);
 
-  const display = q.trim() ? filtered : [];
+  const display = q.trim() ? results : [];
 
   const go = (item: ResultItem) => {
     if (item.kind === "deck") {
       router.push(`/decks/${item.id}`);
       return;
     }
-    // kind === "card"
-    // ไปหน้า card detail หรือ reading ตามที่ต้องการ
-    // ตัวอย่างนี้ส่งไปหน้ารายละเอียดการ์ด:
-    router.push(`/cards/${item.id}`);
+    // ถ้าไพ่ถูกล็อก → ไปหน้าแพ็กเกจ
+    if (item.locked) {
+      router.push("/packages");
+      return;
+    }
+    // kind === "card" → ไปหน้ารายละเอียดการ์ด
+    if (item.deck_id) {
+      router.push(`/decks/${item.deck_id}/cards/${item.id}`);
+    } else {
+      router.push(`/cards/${item.id}`);
+    }
   };
 
   const onSubmit = (e: React.FormEvent) => {
@@ -246,11 +281,11 @@ export default function SearchClient() {
               <div className="px-4 py-4 text-sm text-slate-600">กำลังค้นหา...</div>
             ) : !q.trim() ? (
               <div className="px-4 py-4 text-sm text-slate-600">
-                พิมพ์คำค้น เช่น “เดอะซัน”, “ความรัก”, “Rider Waite”
+                พิมพ์คำค้น เช่น "เดอะซัน", "ความรัก", "Rider Waite"
               </div>
             ) : display.length === 0 ? (
               <div className="px-4 py-4 text-sm text-slate-600">
-                ไม่พบผลลัพธ์สำหรับ “{q}”
+                ไม่พบผลลัพธ์สำหรับ "{q}"
               </div>
             ) : (
               <ul className="divide-y divide-slate-200">
@@ -258,18 +293,58 @@ export default function SearchClient() {
                   <li key={`${item.kind}-${item.id}`}>
                     <button
                       onClick={() => go(item)}
-                      className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-slate-50"
+                      className="flex w-full items-start gap-3 px-3 py-3 text-left hover:bg-slate-50"
                     >
-                      <span className="text-[15px] text-slate-900">{item.title}</span>
-                      <span className="ml-3 shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-700">
-                        {item.kind === "card" ? "ไพ่" : "สำรับ"}
-                      </span>
-                    </button>
-                    {item.subtitle && (
-                      <div className="px-4 pb-3 -mt-2 text-xs text-slate-500">
-                        {item.subtitle}
+                      {/* รูปภาพ */}
+                      {item.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.image}
+                          alt=""
+                          className={`flex-none rounded-lg object-cover ${
+                            item.kind === "deck" ? "h-16 w-16" : "h-16 w-12"
+                          }`}
+                        />
+                      ) : (
+                        <div className={`flex-none rounded-lg bg-slate-200 ${
+                          item.kind === "deck" ? "h-16 w-16" : "h-16 w-12"
+                        }`} />
+                      )}
+
+                      {/* เนื้อหา */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-[15px] font-semibold text-slate-900">
+                            {item.title}
+                          </span>
+                          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                            {item.kind === "card" ? "ไพ่" : "สำรับ"}
+                          </span>
+                          {item.kind === "card" && item.locked && (
+                            <LockIcon />
+                          )}
+                          {item.kind === "deck" && item.free === false && (
+                            <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                              VIP
+                            </span>
+                          )}
+                        </div>
+                        {item.kind === "card" && item.deckName && (
+                          <p className="mt-0.5 text-xs text-violet-600">
+                            {item.deckName}
+                          </p>
+                        )}
+                        {item.kind === "card" && item.describe ? (
+                          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                            {item.describe}
+                          </p>
+                        ) : item.subtitle ? (
+                          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                            {item.subtitle}
+                          </p>
+                        ) : null}
                       </div>
-                    )}
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -287,6 +362,14 @@ function SearchIcon() {
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="7" />
       <path d="m21 21-3.8-3.8" />
+    </svg>
+  );
+}
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber-500">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   );
 }

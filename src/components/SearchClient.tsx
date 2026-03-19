@@ -281,11 +281,11 @@ export default function SearchClient() {
               <div className="px-4 py-4 text-sm text-slate-600">กำลังค้นหา...</div>
             ) : !q.trim() ? (
               <div className="px-4 py-4 text-sm text-slate-600">
-                พิมพ์คำค้น เช่น "เดอะซัน", "ความรัก", "Rider Waite"
+                พิมพ์คำค้น เช่น &quot;เดอะซัน&quot;, &quot;ความรัก&quot;, &quot;Rider Waite&quot;
               </div>
             ) : display.length === 0 ? (
               <div className="px-4 py-4 text-sm text-slate-600">
-                ไม่พบผลลัพธ์สำหรับ "{q}"
+                ไม่พบผลลัพธ์สำหรับ &quot;{q}&quot;
               </div>
             ) : (
               <ul className="divide-y divide-slate-200">

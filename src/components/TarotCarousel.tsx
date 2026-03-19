@@ -23,6 +23,10 @@ type Props = {
   limit?: number; // ใช้ตอน fallback ไปดึง promotions
   height?: number;
   aspectSquare?: boolean; // 👈 แสดงแบบสี่เหลี่ยมจัตุรัส
+  showArrows?: boolean; // 👈 แสดง/ซ่อนลูกศรซ้าย-ขวา (default true)
+  fitContent?: boolean; // 👈 ให้ขนาดพอดีกับรูป ไม่ fix height
+  showShadow?: boolean; // 👈 แสดง/ซ่อน shadow (default true)
+  darkDots?: boolean; // 👈 ใช้ dots สีเข้ม (สำหรับพื้นหลังสว่าง)
 };
 
 export default function TarotCarousel({
@@ -35,6 +39,10 @@ export default function TarotCarousel({
   limit = 5,
   height = 220,
   aspectSquare = false,
+  showArrows = true,
+  fitContent = false,
+  showShadow = true,
+  darkDots = false,
 }: Props) {
   const supabase = createClient();
   const router = useRouter();
@@ -180,11 +188,11 @@ export default function TarotCarousel({
   return (
     <div className={`relative mx-auto w-full ${className}`}>
       <div
-        className={`overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-slate-900/20 to-slate-800/20 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur ${aspectSquare ? "aspect-square" : ""}`}
-        style={aspectSquare ? undefined : { height }}
+        className={`overflow-hidden rounded-lg ${aspectSquare ? "aspect-square" : ""}`}
+        style={aspectSquare || fitContent ? undefined : { height }}
       >
         <div
-          className="flex h-full transition-transform duration-500"
+          className={`flex ${fitContent ? "" : "h-full"} transition-transform duration-500`}
           style={{ transform: `translateX(-${index * 100}%)` }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -194,7 +202,7 @@ export default function TarotCarousel({
           {slides.map((src, i) => (
             <div
               key={`${src}-${i}`}
-              className={`relative h-full w-full flex-[0_0_100%] ${
+              className={`relative ${fitContent ? "" : "h-full"} w-full flex-[0_0_100%] ${
                 enableLink && slideLinks[i]
                   ? "cursor-pointer"
                   : "cursor-default"
@@ -205,7 +213,10 @@ export default function TarotCarousel({
               <img
                 src={src}
                 alt=""
-                className="absolute inset-0 h-full w-full rounded-2xl object-contain"
+                className={fitContent
+                  ? "w-full object-contain"
+                  : "absolute inset-0 h-full w-full object-contain"
+                }
                 draggable={false}
                 loading="lazy"
               />
@@ -217,43 +228,47 @@ export default function TarotCarousel({
       {slides.length > 1 && (
         <>
           {/* prev / next arrows */}
-          <button
-            onClick={prev}
-            aria-label="Previous"
-            className="absolute left-1 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-slate-700 shadow ring-1 ring-black/5 hover:bg-white"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </button>
+          {showArrows && (
+            <>
+              <button
+                onClick={prev}
+                aria-label="Previous"
+                className="absolute left-1 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-slate-700 shadow ring-1 ring-black/5 hover:bg-white"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
 
-          <button
-            onClick={next}
-            aria-label="Next"
-            className="absolute right-1 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-slate-700 shadow ring-1 ring-black/5 hover:bg-white"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m9 18 6-6-6-6" />
-            </svg>
-          </button>
+              <button
+                onClick={next}
+                aria-label="Next"
+                className="absolute right-1 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-slate-700 shadow ring-1 ring-black/5 hover:bg-white"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+            </>
+          )}
 
           {/* dots */}
           <div className="mt-2 flex items-center justify-center gap-2">
@@ -262,8 +277,10 @@ export default function TarotCarousel({
                 key={i}
                 aria-label={`Go to slide ${i + 1}`}
                 onClick={() => setIndex(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === index ? "w-6 bg-white" : "w-1.5 bg-white/50"
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  i === index
+                    ? `w-6 ${darkDots ? "bg-gray-700" : "bg-white"}`
+                    : `w-2 ${darkDots ? "bg-gray-400" : "bg-white/40"}`
                 }`}
               />
             ))}

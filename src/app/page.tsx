@@ -20,7 +20,7 @@ export default function Home() {
       </section>
 
       {/* โซนคอนเทนต์ด้านบน (พื้นหลังสีเดิม) */}
-      <div className="mx-auto w-full max-w-[390px] space-y-8 px-4 pt-6">
+      <div className="mx-auto w-full max-w-[390px] space-y-8 px-4 pt-6 pb-36">
         {/* Carousel */}
         <div className="flex justify-center">
           <HomeBannerCarousel />

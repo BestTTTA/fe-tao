@@ -280,8 +280,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Create redirect response after sign in
-    const response = NextResponse.redirect(new URL('/', origin))
+    // 📋 ตรวจสอบว่ายอมรับข้อตกลงแล้วหรือยัง
+    let redirectPath = '/'
+    if (signedInUser) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('accepted_terms')
+        .eq('id', signedInUser.id)
+        .maybeSingle()
+
+      if (!profile || profile.accepted_terms !== true) {
+        redirectPath = '/terms'
+      }
+    }
+
+    const response = NextResponse.redirect(new URL(redirectPath, origin))
 
     // Set all session cookies in the response
     cookiesToSet.forEach(({ name, value, options }) => {

@@ -61,6 +61,8 @@ export default function HomeBannerCarousel() {
       enableLink={true}
       autoPlay={true}
       interval={4000}
+      showArrows={false}
+      fitContent={true}
     />
   );
 }

@@ -63,6 +63,20 @@ export async function login(formData: FormData) {
     }
   }
 
+  // 📋 ตรวจสอบว่ายอมรับข้อตกลงแล้วหรือยัง
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('accepted_terms')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!profile || profile.accepted_terms !== true) {
+      revalidatePath('/', 'layout')
+      redirect('/terms')
+    }
+  }
+
   revalidatePath('/', 'layout')
   redirect('/')
 }

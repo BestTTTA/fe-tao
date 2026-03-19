@@ -55,7 +55,7 @@ export default function AboutPage() {
             <p className="text-center text-slate-500">กำลังโหลด...</p>
           ) : htmlContent ? (
             <div
-              className="prose prose-sm max-w-none"
+              className="html-content"
               dangerouslySetInnerHTML={{ __html: htmlContent }}
             />
           ) : (

@@ -12,6 +12,7 @@ type Deck = {
   detail: string | null;
   deck_back_url: string | null;
   free: boolean;
+  gallery: string[] | null;
 };
 type Card = {
   id: number;
@@ -56,7 +57,7 @@ export default async function DeckDetailPage({
   // โหลดข้อมูลเด็ค
   const { data: deck, error: dErr } = await supabase
     .from("decks")
-    .select("id, deck_name, deck_url, detail, free, deck_back_url")
+    .select("id, deck_name, deck_url, detail, free, deck_back_url, gallery")
     .eq("id", Number(deckId))
     .maybeSingle<Deck>();
 
@@ -97,13 +98,17 @@ export default async function DeckDetailPage({
           
 
           <TarotCarousel
-            images={[
-              `${toPublicUrl(deck.deck_url)}`,
-              `${toPublicUrl(deck.deck_back_url)}`,
-            ]}
+            images={
+              deck.gallery?.length
+                ? deck.gallery.map((url) => toPublicUrl(url)!).filter(Boolean)
+                : [toPublicUrl(deck.deck_url)].filter(Boolean) as string[]
+            }
             autoPlay
             interval={4000}
             aspectSquare
+            showArrows={false}
+            showShadow={false}
+            darkDots
           />
 
 

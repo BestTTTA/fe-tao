@@ -15,7 +15,7 @@ export type RouteOptions = {
   onRightClick?: () => void;
 
   /** NEW: กำหนดการทำงานของปุ่มขวา */
-  rightAction?: "menu" | "share" | "dots-menu";
+  rightAction?: "menu" | "share" | "dots-menu" | "edit";
 };
 
 export default function TransparentHeader({
@@ -102,7 +102,11 @@ export default function TransparentHeader({
     }
 
     if (r.rightAction === "dots-menu") {
-      // ถ้าเป็น dots-menu ให้เรียก callback เท่านั้น ไม่ต้องทำอะไร
+      return;
+    }
+
+    if (r.rightAction === "edit") {
+      router.push("/menu/profile/edit");
       return;
     }
 
@@ -169,6 +173,12 @@ export default function TransparentHeader({
                   <circle cx="6" cy="12" r="3" />
                   <circle cx="18" cy="19" r="3" />
                   <path d="M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5" />
+                </svg>
+              ) : r.rightAction === "edit" ? (
+                // Pencil/edit icon
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
                 </svg>
               ) : r.rightAction === "dots-menu" ? (
                 // Vertical dots icon (จุดไข่ปลาสามจุดแนวตั้ง)

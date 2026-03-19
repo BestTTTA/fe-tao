@@ -34,6 +34,19 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // 📋 ตรวจสอบว่ายอมรับข้อตกลงแล้วหรือยัง
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('accepted_terms')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (!profile || profile.accepted_terms !== true) {
+          return NextResponse.redirect(new URL('/terms', requestUrl.origin))
+        }
+      }
+
       // Successfully authenticated, redirect to the specified path or home
       return NextResponse.redirect(new URL(next, requestUrl.origin))
     }

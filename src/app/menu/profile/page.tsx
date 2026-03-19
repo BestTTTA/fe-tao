@@ -174,9 +174,10 @@ export default function AccountProfilePage() {
           "/menu/profile": {
             showLogo: false,
             showSearch: false,
-            showMenu: false,
+            showMenu: true,
             showBack: true,
             backPath: "/menu",
+            rightAction: "edit",
           },
         }}
       />
@@ -236,14 +237,14 @@ export default function AccountProfilePage() {
           <Field label="ที่อยู่" value={user.address ?? "-"} multiline />
 
           {/* ปุ่มแก้ไข */}
-          <div className="mt-4 flex justify-center">
+          {/* <div className="mt-4 flex justify-center">
             <button
               onClick={() => router.push("/menu/profile/edit")}
               className="rounded-xl bg-violet-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-violet-800"
             >
               แก้ไขข้อมูล
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 

@@ -306,7 +306,7 @@ export async function signInWithLine() {
   lineAuthUrl.searchParams.set('client_id', process.env.LINE_CHANNEL_ID || '');
   lineAuthUrl.searchParams.set('redirect_uri', `${siteUrl}/auth/line/callback`);
   lineAuthUrl.searchParams.set('state', state);
-  lineAuthUrl.searchParams.set('scope', 'profile openid email');
+  lineAuthUrl.searchParams.set('scope', 'profile openid');
 
   // Redirect to LINE authorization page
   redirect(lineAuthUrl.toString());

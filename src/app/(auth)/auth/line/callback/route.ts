@@ -133,13 +133,21 @@ export async function GET(request: NextRequest) {
           process.env.SUPABASE_SERVICE_ROLE_KEY!,
           { auth: { autoRefreshToken: false, persistSession: false } }
         )
-        await adminForSync
-          .from('profiles')
-          .update({
-            nick_name: profile.displayName ?? null,
-            avatar_url: profile.pictureUrl ?? null,
-          })
-          .eq('id', signedInForSync.id)
+        await Promise.all([
+          adminForSync
+            .from('profiles')
+            .update({
+              nick_name: profile.displayName ?? null,
+              avatar_url: profile.pictureUrl ?? null,
+            })
+            .eq('id', signedInForSync.id),
+          adminForSync.auth.admin.updateUserById(signedInForSync.id, {
+            user_metadata: {
+              full_name: profile.displayName ?? null,
+              avatar_url: profile.pictureUrl ?? null,
+            },
+          }),
+        ])
       }
 
       console.log('Existing LINE user signed in')
@@ -159,12 +167,9 @@ export async function GET(request: NextRequest) {
           options: {
             emailRedirectTo: `${origin}/auth/callback`,
             data: {
-              // ชื่อเล่น = displayName จาก LINE
               nick_name: profile.displayName ?? null,
-              // ชื่อ-นามสกุล LINE ไม่ได้ให้ → null
-              full_name: null,
+              full_name: profile.displayName ?? null,
               avatar_url: profile.pictureUrl ?? null,
-              // email จริง LINE ไม่ได้ให้ → null
               email: null,
               line_user_id: profile.userId,
               provider: 'line',

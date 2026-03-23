@@ -170,7 +170,6 @@ export async function GET(request: NextRequest) {
               nick_name: profile.displayName ?? null,
               full_name: profile.displayName ?? null,
               avatar_url: profile.pictureUrl ?? null,
-              email: null,
               line_user_id: profile.userId,
               provider: 'line',
             },

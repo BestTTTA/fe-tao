@@ -60,7 +60,8 @@ export default function EditProfilePage() {
         // Fallback to social login metadata if profile fields are empty
         const meta = sessionUser.user_metadata ?? {};
         const metaFullName: string = meta.full_name ?? meta.name ?? "";
-        const metaEmail: string = meta.email ?? sessionUser.email ?? "";
+        const rawEmail = meta.email ?? sessionUser.email ?? "";
+        const metaEmail = rawEmail.includes("@line.placeholder.com") ? "" : rawEmail;
 
         const storedFullName = (profile?.full_name ?? "").trim();
         const resolvedFullName = storedFullName || metaFullName;

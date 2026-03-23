@@ -117,7 +117,7 @@ export default function AvatarCropModal({
   };
 
   // ---- pointer helpers ----
-  const getTouchPos = (t: Touch) => {
+  const getTouchPos = (t: { clientX: number; clientY: number }) => {
     const rect = canvasRef.current!.getBoundingClientRect();
     const displayToCanvas = canvasSize / rect.width;
     return {

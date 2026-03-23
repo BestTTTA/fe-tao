@@ -317,6 +317,15 @@ export async function GET(request: NextRequest) {
       // ตั้งค่า trial 30 วันเฉพาะ LINE user ใหม่รอบแรกเท่านั้น
       const { initTrialIfNeeded } = await import('@/lib/init-trial')
       await initTrialIfNeeded(signedInUser.id)
+
+      // LINE ไม่มี email จริง → ล้าง placeholder email ออกจาก profiles
+      const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+      const adminClear = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      )
+      await adminClear.from('profiles').update({ email: null }).eq('id', signedInUser.id)
     }
 
     // 📋 ตรวจสอบว่ายอมรับข้อตกลงแล้วหรือยัง

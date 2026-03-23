@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import TransparentHeader from "@/components/TransparentHeader";
+import { getUserTier, hasPremiumAccess } from "@/lib/user-tier";
 
 type Deck = {
   id: number;
@@ -48,23 +49,17 @@ export default async function CardDetailPage(props: {
   const { data: u } = await supabase.auth.getUser();
   const uid = u.user?.id ?? null;
 
-  let isVip = false;
-  if (uid) {
+  let canSee = deck.free;
+  if (!canSee && uid) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("plan_type, plan_status")
+      .select("plan_type, plan_status, plan_current_period_end")
       .eq("id", uid)
       .maybeSingle();
-
-    isVip =
-      !!profile &&
-      (profile.plan_type === "MONTH" || profile.plan_type === "YEAR") &&
-      (profile.plan_status === "active" || profile.plan_status === "trialing");
+    canSee = hasPremiumAccess(getUserTier(profile));
   }
-
-  const canSee = deck.free || isVip;
   if (!canSee) {
-    redirect("/pricing");
+    redirect("/packages");
   }
 
   // ✅ รองรับทั้ง cardId แบบตัวเลข (id) และแบบสลัก (file_name)
@@ -117,7 +112,6 @@ export default async function CardDetailPage(props: {
             showSearch: false,
             showMenu: false,
             showBack: true,
-            backPath: `/decks/${deck.id}`,
           },
         }}
       />

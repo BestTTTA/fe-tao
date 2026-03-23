@@ -9,6 +9,18 @@ import { createClient } from "@/utils/supabase/client";
 
 /* ---------- helpers ---------- */
 
+/** Fisher-Yates shuffle using crypto.getRandomValues() for better entropy */
+function secureShuffle(arr: number[]): number[] {
+  const result = [...arr];
+  const buf = new Uint32Array(result.length);
+  crypto.getRandomValues(buf);
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = buf[i] % (i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 const spreadCountFromId = (id?: string) => {
   if (!id) return 3;
   if (id === "12circle") return 12;
@@ -34,6 +46,7 @@ export default function ManualShufflePage() {
   const search = useSearchParams();
   const deckId = search.get("deck") ?? "magician-dark";
   const question = search.get("q") ?? "";
+  const isAuto = search.get("auto") === "1";
 
   const [cardBackUrl, setCardBackUrl] = useState<string>("/card-form/back-card.png");
   const [totalCards, setTotalCards] = useState(0);
@@ -95,13 +108,9 @@ export default function ManualShufflePage() {
   };
 
   const autoPick = () => {
-    const all = Array.from({ length: totalCards }, (_, i) => i);
-    for (let i = all.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [all[i], all[j]] = [all[j], all[i]];
-    }
+    const picks = secureShuffle(Array.from({ length: totalCards }, (_, i) => i)).slice(0, need);
     setShuffling(false);
-    setSelected(all.slice(0, need));
+    setSelected(picks);
   };
 
   const confirm = () => {
@@ -111,6 +120,29 @@ export default function ManualShufflePage() {
       `/reading/${spreadId || "3-card"}/result?deck=${encodeURIComponent(deckId)}&pick=${encodeURIComponent(pick)}&q=${encodeURIComponent(question)}`
     );
   };
+
+  // Auto mode helpers
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoNavigated = useRef(false);
+
+  const goToResultAuto = () => {
+    if (autoNavigated.current || totalCards === 0) return;
+    autoNavigated.current = true;
+    if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
+    const picks = secureShuffle(Array.from({ length: totalCards }, (_, i) => i)).slice(0, need);
+    router.push(
+      `/reading/${spreadId || "3-card"}/result?deck=${encodeURIComponent(deckId)}&pick=${encodeURIComponent(picks.join(","))}&q=${encodeURIComponent(question)}`
+    );
+  };
+
+  useEffect(() => {
+    if (!isAuto || totalCards === 0 || autoNavigated.current) return;
+    autoTimerRef.current = setTimeout(goToResultAuto, 3000);
+    return () => {
+      if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuto, totalCards]);
 
   return (
     <main className="relative min-h-screen text-white overflow-x-hidden">
@@ -132,7 +164,10 @@ export default function ManualShufflePage() {
       <section className="relative h-[100px] sm:h-[120px] w-full overflow-hidden" />
 
       {/* Content Container */}
-      <div className="relative flex flex-col min-h-[calc(100vh-100px)] sm:min-h-[calc(100vh-120px)]">
+      <div
+        className="relative flex flex-col min-h-[calc(100vh-100px)] sm:min-h-[calc(100vh-120px)]"
+        onClick={isAuto ? goToResultAuto : undefined}
+      >
         {/* Main Content - Centered */}
         <div className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 pb-32 sm:pb-36">
           {shuffling ? (
@@ -143,7 +178,9 @@ export default function ManualShufflePage() {
               </div>
               <div className="flex items-center justify-center gap-2 text-white/90">
                 <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-xs sm:text-sm">กำลังสับไพ่... กดหยุดเมื่อคุณพร้อม</span>
+                <span className="text-xs sm:text-sm">
+                  {isAuto ? "กำลังสุ่มไพ่... แตะที่หน้าจอเพื่อข้าม" : "กำลังสับไพ่... กดหยุดเมื่อคุณพร้อม"}
+                </span>
               </div>
             </div>
           ) : (
@@ -177,12 +214,14 @@ export default function ManualShufflePage() {
         <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pt-4 pb-safe z-50">
           <div className="mx-auto max-w-md px-3 sm:px-4 pb-2 sm:pb-3">
             {shuffling ? (
-              <button
-                onClick={stopShuffle}
-                className="w-full rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-3.5 sm:py-4 text-center text-base sm:text-lg font-semibold text-slate-900 shadow-lg active:scale-95 transition-transform duration-150"
-              >
-                หยุดสับไพ่
-              </button>
+              !isAuto && (
+                <button
+                  onClick={stopShuffle}
+                  className="w-full rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-3.5 sm:py-4 text-center text-base sm:text-lg font-semibold text-slate-900 shadow-lg active:scale-95 transition-transform duration-150"
+                >
+                  หยุดสับไพ่
+                </button>
+              )
             ) : (
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button

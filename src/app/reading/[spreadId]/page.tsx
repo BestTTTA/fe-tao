@@ -29,20 +29,8 @@ export default function ReadingQuestionPage() {
     const d = encodeURIComponent(deckId);
 
     if (mode === "auto") {
-      // Auto mode: Fisher-Yates shuffle and go straight to result
-      const cardCount = spreadCountFromId(spreadId);
-      const totalCards = 18;
-
-      // Fisher-Yates shuffle to get random unique indexes
-      const allIndexes = Array.from({ length: totalCards }, (_, i) => i);
-      for (let i = allIndexes.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [allIndexes[i], allIndexes[j]] = [allIndexes[j], allIndexes[i]];
-      }
-
-      // Take first N cards
-      const picks = allIndexes.slice(0, cardCount).join(',');
-      router.push(`/reading/${spreadId}/result?deck=${d}&pick=${encodeURIComponent(picks)}&q=${q}`);
+      // Auto mode: go to shuffle page, which will auto-pick and navigate to result
+      router.push(`/reading/${spreadId}/manual?deck=${d}&q=${q}&auto=1`);
     } else {
       // Manual mode: go to manual shuffle page
       router.push(`/reading/${spreadId}/${mode}?deck=${d}&q=${q}`);

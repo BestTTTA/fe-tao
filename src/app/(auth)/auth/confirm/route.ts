@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
           await supabase.auth.signOut()
           redirect('/session-conflict')
         }
+        const { initTrialIfNeeded } = await import('@/lib/init-trial')
+        await initTrialIfNeeded(user.id)
       }
       // redirect user to specified redirect URL or root of app
       redirect(next)

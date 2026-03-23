@@ -26,12 +26,7 @@ const BASE_SPREADS: Spread[] = [
   { id: "12-circle", title: "วางไพ่ 12 ใบ (วงกลม)", description: "สเปรด 12 ใบแบบวงกลม",      img: "/card-form/12circle.png" },
 ];
 
-type Profile = {
-  plan_type: "FREE" | "MONTH" | "YEAR" | null;
-  plan_status:
-    | "active" | "trialing" | "past_due" | "canceled"
-    | "incomplete" | "incomplete_expired" | "unpaid" | null;
-};
+import { getUserTier, hasPremiumAccess, type ProfilePlan } from "@/lib/user-tier";
 
 const mapSpreadId = (id: string) => (id === "12-circle" ? "12circle" : `${id}-card`);
 
@@ -107,17 +102,13 @@ function ReadingContent() {
 
       const { data: prof } = await supabase
         .from("profiles")
-        .select("plan_type, plan_status")
+        .select("plan_type, plan_status, plan_current_period_end")
         .eq("id", uid)
-        .maybeSingle<Profile>();
+        .maybeSingle();
 
-      const vip =
-        !!prof &&
-        (prof.plan_type === "MONTH" || prof.plan_type === "YEAR") &&
-        (prof.plan_status === "active" || prof.plan_status === "trialing");
-
+      const tier = getUserTier(prof as ProfilePlan | null);
       if (mounted) {
-        setIsVip(vip);
+        setIsVip(hasPremiumAccess(tier));
         setLoading(false);
       }
     })();

@@ -12,23 +12,23 @@ const supabaseAdmin = createAdminClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+import { getUserTier, hasPremiumAccess, type ProfilePlan } from "@/lib/user-tier";
+
 // ---- business helpers ----
 
-// ผู้ใช้มีสิทธิ์เปิดสำรับ VIP มั้ย (ก่อนเช็คโควต้า)
-function canUsePremium(planType: string | null, planStatus: string | null) {
-  // ถ้าเป็น FREE หรือค่าว่าง -> ยังไม่มีสิทธิ์ VIP
-  if (!planType || planType === "FREE") {
-    return { ok: false, reason: "สำรับนี้สำหรับสมาชิกเท่านั้น" };
+// ผู้ใช้มีสิทธิ์เปิดสำรับ premium มั้ย (VIP หรือ Trial)
+function canUsePremium(profile: ProfilePlan | null) {
+  const tier = getUserTier(profile);
+  if (hasPremiumAccess(tier)) {
+    return { ok: true, reason: null, tier };
   }
-
-  // ต้องมีสถานะที่อนุญาตใช้งาน
-  const okStatus = ["active", "trialing"]; // คุณอนุญาต past_due ไหม? ถ้าใช่ก็เติมได้
-  if (!planStatus || !okStatus.includes(planStatus)) {
-    return { ok: false, reason: "Your plan is inactive or expired." };
-  }
-
-  // ถ้า plan_type เป็น MONTH หรือ YEAR และสถานะ active/trialing -> ผ่านขั้นต้น
-  return { ok: true, reason: null };
+  return {
+    ok: false,
+    reason: tier === "basic"
+      ? "สิทธิ์ทดลองใช้หมดแล้ว กรุณาสมัคร VIP"
+      : "สำรับนี้สำหรับสมาชิกเท่านั้น",
+    tier,
+  };
 }
 
 // ---- main handler ----
@@ -102,7 +102,7 @@ export async function GET(
     // profiles มี policy "public read" อยู่แล้วใน SQL คุณ, แต่เราจะอ่านด้วย supabaseAdmin ให้แน่นอนก็ได้
     const { data: profileRow, error: profileErr } = await supabaseAdmin
       .from("profiles")
-      .select("plan_type, plan_status")
+      .select("plan_type, plan_status, plan_current_period_end")
       .eq("id", userId)
       .maybeSingle();
 
@@ -116,10 +116,8 @@ export async function GET(
       return new NextResponse("Profile not found", { status: 404 });
     }
 
-    const { plan_type, plan_status } = profileRow;
-
-    // ตรวจสิทธิ์เบื้องต้น (เป็น FREE ไหม? สถานะ active/trialing ไหม?)
-    const accessCheck = canUsePremium(plan_type, plan_status);
+    // ตรวจสิทธิ์เบื้องต้น (VIP / Trial / Basic)
+    const accessCheck = canUsePremium(profileRow as ProfilePlan);
     if (!accessCheck.ok) {
       return new NextResponse(accessCheck.reason ?? "Forbidden", {
         status: 403,

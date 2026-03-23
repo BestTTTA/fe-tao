@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 import { createClient } from "@/utils/supabase/client";
+import { getUserTier, hasPremiumAccess, type UserTier, type ProfilePlan } from "@/lib/user-tier";
 
 type DbDeck = {
   id: number;
@@ -20,7 +21,6 @@ type DeckVM = {
 };
 
 type TabKey = "all" | "fav";
-type PlanType = "FREE" | "MONTH" | "YEAR";
 
 const toPublicUrl = (p?: string | null) => {
   if (!p) return null;
@@ -38,7 +38,7 @@ export default function OpenCardPage() {
   const [decks, setDecks] = useState<DeckVM[]>([]);
   const [favDeckIds, setFavDeckIds] = useState<Set<number>>(new Set());
   const [userId, setUserId] = useState<string | null>(null);
-  const [planType, setPlanType] = useState<PlanType>("FREE");
+  const [userTier, setUserTier] = useState<UserTier>("basic");
 
   // โหลด decks + user + favorites + plan_type
   useEffect(() => {
@@ -87,18 +87,14 @@ export default function OpenCardPage() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("plan_type")
+          .select("plan_type, plan_status, plan_current_period_end")
           .eq("id", uid)
           .single();
 
-        if (profile?.plan_type) {
-          setPlanType(profile.plan_type as PlanType);
-        } else {
-          setPlanType("FREE");
-        }
+        setUserTier(getUserTier(profile as ProfilePlan | null));
       } else {
         setFavDeckIds(new Set());
-        setPlanType("FREE");
+        setUserTier("basic");
       }
 
       setLoading(false);
@@ -177,9 +173,11 @@ export default function OpenCardPage() {
         return;
       }
 
-      // deck VIP แต่ user ยัง FREE → ไม่ต้องยิง API เลย
-      if (vipOnly && planType === "FREE") {
-        alert("สำรับนี้สำหรับสมาชิกเท่านั้น");
+      // deck VIP แต่ user ไม่มีสิทธิ์ premium → ไม่ต้องยิง API เลย
+      if (vipOnly && !hasPremiumAccess(userTier)) {
+        alert(userTier === "basic"
+          ? "สิทธิ์ทดลองใช้หมดแล้ว กรุณาสมัคร VIP"
+          : "สำรับนี้สำหรับสมาชิกเท่านั้น");
         return;
       }
 
@@ -207,7 +205,7 @@ export default function OpenCardPage() {
         alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
       }
     },
-    [router, userId, planType],
+    [router, userId, userTier],
   );
 
   return (
@@ -293,7 +291,7 @@ export default function OpenCardPage() {
                 onToggleFav={() => toggleFav(d.id)}
                 onInfo={() => router.push(`/decks/${d.id}`)}
                 onRead={() => handleReadClick(d.id, d.vipOnly)}
-                planType={planType}
+                planType={userTier}
               />
             ))}
             {!listToShow.length && (
@@ -323,15 +321,15 @@ function DeckCard({
   onToggleFav: () => void;
   onRead: () => void;
   onInfo: () => void;
-  planType: "FREE" | "MONTH" | "YEAR";
+  planType: UserTier;
 }) {
-  // disabled เฉพาะเคสพื้นฐาน: user FREE แต่สำรับ VIP
-  // สำหรับ MONTH quota เต็ม / plan inactive เราจะปล่อยให้คลิกได้
+  // disabled เฉพาะเคส: user ไม่มีสิทธิ์ premium แต่สำรับ VIP
+  // สำหรับ quota เต็ม / plan inactive เราจะปล่อยให้คลิกได้
   // แล้ว backend จะเป็นคนตอบกลับด้วย status 429/403
-  const disabled = deck.vipOnly && planType === "FREE";
+  const disabled = deck.vipOnly && !hasPremiumAccess(planType);
 
   const buttonLabel =
-    deck.vipOnly && planType === "FREE" ? "VIP Only" : "ดูดวง";
+    deck.vipOnly && !hasPremiumAccess(planType) ? "VIP Only" : "ดูดวง";
 
   return (
     <div className="overflow-hidden rounded-2xl bg-white/95 p-2 text-slate-900 shadow ring-1 ring-black/5 backdrop-blur">

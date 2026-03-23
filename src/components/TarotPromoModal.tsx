@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { getUserTier, hasPremiumAccess, type ProfilePlan } from "@/lib/user-tier";
 
 export type TarotPromoModalProps = {
   open?: boolean;
@@ -13,20 +14,6 @@ export type TarotPromoModalProps = {
   storageKey?: string;
   configKey?: string; // key in configs table (default: 'popup_home')
   imgClassName?: string;
-};
-
-type Profile = {
-  id: string;
-  plan_type: "FREE" | "MONTH" | "YEAR" | null;
-  plan_status:
-    | "active"
-    | "trialing"
-    | "past_due"
-    | "canceled"
-    | "incomplete"
-    | "incomplete_expired"
-    | "unpaid"
-    | null;
 };
 
 export default function TarotPromoModal({
@@ -48,6 +35,7 @@ export default function TarotPromoModal({
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [popupImageUrl, setPopupImageUrl] = useState<string | null>(null);
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
 
   const updateOpen = useCallback(
     (val: boolean) => {
@@ -83,37 +71,32 @@ export default function TarotPromoModal({
         // 3) ล็อกอินแล้ว เช็กสิทธิ์ VIP ถ้าเป็น VIP ก็ไม่ต้องแสดง modal
         const { data: prof } = await supabase
           .from("profiles")
-          .select("id, plan_type, plan_status")
+          .select("plan_type, plan_status, plan_current_period_end")
           .eq("id", uid)
-          .maybeSingle<Profile>();
+          .maybeSingle();
 
-        const isPaidActive =
-          prof &&
-          prof.plan_type &&
-          prof.plan_type !== "FREE" &&
-          (prof.plan_status === "active" || prof.plan_status === "trialing");
-
-        if (isPaidActive) {
+        const tier = getUserTier(prof as ProfilePlan | null);
+        if (hasPremiumAccess(tier)) {
           updateOpen(false);
           setLoading(false);
           return;
         }
       }
 
-      // 4) โหลด popup image จาก configs table
-      const { data: configData } = await supabase
+      // 4) โหลด popup image + html_content จาก configs table
+      const { data: configRow } = await supabase
         .from("configs")
-        .select("value")
+        .select("value, html_content")
         .eq("key", configKey)
-        .single();
+        .maybeSingle();
 
       if (!mounted) return;
 
-      const imageUrl = configData?.value ?? null;
+      const imageUrl = configRow?.value ?? null;
       setPopupImageUrl(imageUrl);
+      setHtmlContent(configRow?.html_content ?? null);
 
       if (!imageUrl) {
-        // ไม่มีรูปก็ปิด modal เงียบ ๆ
         updateOpen(false);
         setLoading(false);
         return;
@@ -143,14 +126,14 @@ export default function TarotPromoModal({
   if (!open || loading || !popupImageUrl) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center ">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <div
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
         aria-hidden="true"
         onClick={() => updateOpen(false)}
       />
       <div role="dialog" className="relative z-10 w-[320px]">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5 px-4">
           <button
             onClick={() => updateOpen(false)}
             aria-label="ปิด"
@@ -159,7 +142,7 @@ export default function TarotPromoModal({
             x ปิด
           </button>
 
-          <button onClick={handleCta} className="block w-full px-4">
+          <button onClick={handleCta} className="block w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={popupImageUrl}
@@ -167,6 +150,13 @@ export default function TarotPromoModal({
               className={imgClassName}
             />
           </button>
+
+          {htmlContent && (
+            <div
+              className="px-4 pt-3 pb-1 html-content"
+              dangerouslySetInnerHTML={{ __html: htmlContent }}
+            />
+          )}
 
           {showDontShow && (
             <div className="flex flex-col gap-2 p-2">

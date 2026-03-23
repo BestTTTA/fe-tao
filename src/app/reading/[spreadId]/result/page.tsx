@@ -463,24 +463,13 @@ export default function ReadingResultPage() {
   />
 
       <div className="relative -mt-14 mx-auto max-w-md px-4 pb-28">
-        {/* รูปใหญ่ 2 ใบแรก */}
-        <motion.div
-          initial={animationComplete ? { opacity: 0, scale: 0.8, y: -100 } : false}
-          animate={animationComplete ? { opacity: 1, scale: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="flex items-start justify-center gap-3"
-        >
-          {chosenCards.slice(0, 2).map((c) => (
-            <div key={c.id} className="w-full rounded-xl bg-white/10 ring-1 ring-white/15 backdrop-blur">
-              {/* ✅ ใช้ toPublicUrl */}
-              <img
-                src={toPublicUrl(c.card_url) || "/placeholder-card.jpg"}
-                alt={c.card_name}
-                className="w-full rounded-lg object-cover"
-              />
-            </div>
-          ))}
-        </motion.div>
+        {/* แสดงรูปไพ่ตาม layout ของ spread */}
+        <SpreadCardLayout
+          spreadId={spreadId}
+          cards={chosenCards}
+          animationComplete={animationComplete}
+          toPublicUrl={toPublicUrl}
+        />
 
         {/* รายการรายละเอียด */}
         <motion.section
@@ -591,5 +580,114 @@ export default function ReadingResultPage() {
         </div>
       )}
     </main>
+  );
+}
+
+/* ── layout ของแต่ละ spread ── */
+// แต่ละ array = จำนวนไพ่ต่อแถว เช่น [3,2] = แถวบน 3 ใบ แถวล่าง 2 ใบ
+const SPREAD_ROWS: Record<string, number[] | "circle"> = {
+  "1-card":    [1],
+  "2-card":    [2],
+  "3-card":    [3],
+  "4-card":    [2, 2],
+  "5-card":    [3, 2],
+  "6-card":    [3, 3],
+  "9-card":    [3, 3, 3],
+  "10-card":   [4, 3, 3],
+  "12-card":   [6, 6],
+  "12circle":  "circle",
+};
+
+const colClass: Record<number, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-2",
+  3: "grid-cols-3",
+  4: "grid-cols-4",
+  5: "grid-cols-5",
+  6: "grid-cols-6",
+};
+
+function SpreadCardLayout({
+  spreadId,
+  cards,
+  animationComplete,
+  toPublicUrl,
+}: {
+  spreadId: string;
+  cards: Card[];
+  animationComplete: boolean;
+  toPublicUrl: (p?: string | null) => string | null;
+}) {
+  const layout = SPREAD_ROWS[spreadId];
+
+  const cardImg = (c: Card) => (
+    <div key={c.id} className="w-full rounded-md bg-white/10 ring-1 ring-white/15 backdrop-blur">
+      <img
+        src={toPublicUrl(c.card_url) || "/placeholder-card.jpg"}
+        alt={c.card_name}
+        className="w-full rounded-md object-cover"
+      />
+    </div>
+  );
+
+  // วงกลม 12 ใบ
+  if (layout === "circle" || layout === undefined) {
+    return (
+      <motion.div
+        initial={animationComplete ? { opacity: 0, scale: 0.8 } : false}
+        animate={animationComplete ? { opacity: 1, scale: 1 } : {}}
+        transition={{ duration: 0.6, delay: 0.1 }}
+        className="relative mx-auto"
+        style={{ width: 320, height: 320 }}
+      >
+        {cards.slice(0, 12).map((c, i) => {
+          const angle = (i / 12) * 2 * Math.PI - Math.PI / 2;
+          const r = 130;
+          const x = 160 + r * Math.cos(angle);
+          const y = 160 + r * Math.sin(angle);
+          return (
+            <div
+              key={c.id}
+              className="absolute rounded-md bg-white/10 ring-1 ring-white/15 backdrop-blur overflow-hidden"
+              style={{ width: 44, height: 66, left: x - 22, top: y - 33 }}
+            >
+              <img
+                src={toPublicUrl(c.card_url) || "/placeholder-card.jpg"}
+                alt={c.card_name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          );
+        })}
+      </motion.div>
+    );
+  }
+
+  // layout แบบแถว
+  const rows = Array.isArray(layout) ? layout : [Math.min(cards.length, 3)];
+  let idx = 0;
+
+  return (
+    <motion.div
+      initial={animationComplete ? { opacity: 0, scale: 0.8, y: -100 } : false}
+      animate={animationComplete ? { opacity: 1, scale: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay: 0.1 }}
+      className="flex flex-col gap-3"
+    >
+      {rows.map((count, rowIdx) => {
+        const rowCards = cards.slice(idx, idx + count);
+        idx += count;
+        return (
+          <div
+            key={rowIdx}
+            className={`grid gap-3 justify-items-center ${colClass[count] ?? "grid-cols-3"} ${
+              count === 1 ? "max-w-[140px] mx-auto w-full" : "w-full"
+            }`}
+          >
+            {rowCards.map((c) => cardImg(c))}
+          </div>
+        );
+      })}
+    </motion.div>
   );
 }

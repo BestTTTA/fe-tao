@@ -173,7 +173,6 @@ export default function VipPackagesPage() {
             rightAction: "share",
             showBack: true,
             showSearch: false,
-            backPath: "/",
           },
         }}
       />

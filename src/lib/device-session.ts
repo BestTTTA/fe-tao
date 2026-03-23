@@ -9,12 +9,12 @@ function getAdminClient() {
 }
 
 /**
- * ตรวจสอบและลงทะเบียน session ใหม่แบบ atomic
+ * ลงทะเบียน session ใหม่แบบ atomic (upsert)
  *
- * ใช้วิธี INSERT แทน SELECT+INSERT เพื่อป้องกัน race condition
- * - คืน 'ok'       → INSERT สำเร็จ = ไม่มี session อื่น
- * - คืน 'conflict' → duplicate key (code 23505) = มี session อื่นอยู่แล้ว
- * - คืน 'ok'       → error อื่น → fail open (ป้องกัน lock out กรณี DB มีปัญหา)
+ * ใช้ upsert เพื่อให้ผู้ใช้คนเดิมสามารถ login ซ้ำได้เลย
+ * โดยไม่ต้อง logout ก่อน (แก้ปัญหาปิดแอปแล้ว session ค้าง)
+ * - คืน 'ok' เสมอ เมื่อ upsert สำเร็จ (แทนที่ session เก่า)
+ * - คืน 'ok' เมื่อ error → fail open (ป้องกัน lock out กรณี DB มีปัญหา)
  */
 export async function checkAndRegisterSession(userId: string): Promise<'ok' | 'conflict'> {
   try {
@@ -22,15 +22,13 @@ export async function checkAndRegisterSession(userId: string): Promise<'ok' | 'c
 
     const { error } = await admin
       .from('active_device_sessions')
-      .insert({ user_id: userId })
+      .upsert(
+        { user_id: userId, created_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      )
 
     if (!error) {
       return 'ok'
-    }
-
-    // 23505 = unique_violation → มี session อยู่แล้ว
-    if (error.code === '23505') {
-      return 'conflict'
     }
 
     // 42P01 = table ไม่มีอยู่ → แจ้งเตือนชัดเจน
@@ -45,7 +43,7 @@ export async function checkAndRegisterSession(userId: string): Promise<'ok' | 'c
       return 'ok' // fail open
     }
 
-    console.error('[device-session] insert error:', error.code, error.message)
+    console.error('[device-session] upsert error:', error.code, error.message)
     return 'ok' // fail open สำหรับ error อื่น
   } catch (err) {
     console.error('[device-session] unexpected error:', err)

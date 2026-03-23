@@ -32,6 +32,8 @@ export async function GET(request: NextRequest) {
           await supabase.auth.signOut()
           return NextResponse.redirect(new URL('/session-conflict', requestUrl.origin))
         }
+        const { initTrialIfNeeded } = await import('@/lib/init-trial')
+        await initTrialIfNeeded(user.id)
       }
 
       // 📋 ตรวจสอบว่ายอมรับข้อตกลงแล้วหรือยัง

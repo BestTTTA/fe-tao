@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 import { createClient } from "@/utils/supabase/client";
+import { getUserTier, hasPremiumAccess, type ProfilePlan } from "@/lib/user-tier";
 
 /* ---------- Types ---------- */
 type ResultItem =
@@ -74,14 +75,12 @@ export default function SearchClient() {
       if (!user) return;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("plan_type, plan_status")
+        .select("plan_type, plan_status, plan_current_period_end")
         .eq("id", user.id)
         .maybeSingle();
       if (profile) {
-        const vip =
-          (profile.plan_type === "MONTH" || profile.plan_type === "YEAR") &&
-          (profile.plan_status === "active" || profile.plan_status === "trialing");
-        setIsVip(vip);
+        const tier = getUserTier(profile as ProfilePlan);
+        setIsVip(hasPremiumAccess(tier));
       }
     })();
   }, [supabase]);

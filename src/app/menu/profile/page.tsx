@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import TransparentHeader from "@/components/TransparentHeader";
 import AlertModal, { AlertType } from "@/components/AlertModal";
+import AvatarCropModal from "@/components/AvatarCropModal";
+import { getUserTier } from "@/lib/user-tier";
 import {
   compressImage,
   isValidImageType,
@@ -32,6 +34,7 @@ export default function AccountProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [alert, setAlert] = useState<{
     open: boolean;
     title: string;
@@ -76,52 +79,42 @@ export default function AccountProfilePage() {
     fetchProfile();
   }, [router, supabase]);
 
-  // ✅ ฟังก์ชันอัปโหลด avatar
-  const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Step 1: file selected → validate → open crop modal
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    e.target.value = "";
+
+    if (!isValidImageType(file)) {
+      showAlert("รูปแบบไฟล์ไม่ถูกต้อง", "กรุณาอัปโหลดเฉพาะไฟล์รูปภาพเท่านั้น");
+      return;
+    }
+    if (!isValidFileSize(file, 20)) {
+      showAlert("ขนาดไฟล์เกินกำหนด", "กรุณาเลือกรูปภาพที่มีขนาดไม่เกิน 20 MB");
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setCropSrc(url);
+  };
+
+  // Step 2: crop confirmed → compress → upload
+  const handleCropConfirm = async (croppedBlob: Blob) => {
+    if (!user) return;
+    setCropSrc(null);
+    setUploading(true);
     try {
-      const file = e.target.files?.[0];
-      if (!file || !user) return;
-
-      // 1. Validate file type
-      if (!isValidImageType(file)) {
-        showAlert(
-          "รูปแบบไฟล์ไม่ถูกต้อง",
-          "กรุณาอัปโหลดเฉพาะไฟล์รูปภาพเท่านั้น"
-        );
-        e.target.value = "";
-        return;
-      }
-
-      // 2. Validate file size (20 MB limit)
-      if (!isValidFileSize(file, 20)) {
-        showAlert(
-          "ขนาดไฟล์เกินกำหนด",
-          "กรุณาเลือกรูปภาพที่มีขนาดไม่เกิน 20 MB"
-        );
-        e.target.value = "";
-        return;
-      }
-
-      setUploading(true);
-
-      // 3. Compress and convert to WebP
-      const compressedBlob = await compressImage(file);
+      const compressedBlob = await compressImage(new File([croppedBlob], "avatar.webp", { type: "image/webp" }));
       const filePath = `user-profile/${user.id}.webp`;
 
-      // 4. Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("tao-card")
-        .upload(filePath, compressedBlob, {
-          upsert: true,
-          contentType: "image/webp",
-        });
+        .upload(filePath, compressedBlob, { upsert: true, contentType: "image/webp" });
 
       if (uploadError) throw uploadError;
 
-      // 5. Get public URL with cache busting
       const publicUrl = `${baseUrl}/storage/v1/object/public/tao-card/${filePath}?t=${Date.now()}`;
 
-      // 6. Update profile
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: publicUrl })
@@ -129,7 +122,6 @@ export default function AccountProfilePage() {
 
       if (updateError) throw updateError;
 
-      // 7. Update UI
       setUser({ ...user, avatar_url: publicUrl });
       showAlert("สำเร็จ", "อัปโหลดรูปสำเร็จ!", "success");
     } catch (error) {
@@ -137,8 +129,12 @@ export default function AccountProfilePage() {
       showAlert("เกิดข้อผิดพลาด", "เกิดข้อผิดพลาดในการอัปโหลดรูป");
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
+  };
+
+  const handleCropCancel = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
   };
 
   if (loading)
@@ -157,6 +153,15 @@ export default function AccountProfilePage() {
 
   return (
     <main className="relative min-h-screen">
+      {/* Crop Modal */}
+      {cropSrc && (
+        <AvatarCropModal
+          imageSrc={cropSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
+
       {/* Alert Modal */}
       <AlertModal
         open={alert.open}
@@ -176,7 +181,6 @@ export default function AccountProfilePage() {
             showSearch: false,
             showMenu: true,
             showBack: true,
-            backPath: "/menu",
             rightAction: "edit",
           },
         }}
@@ -212,7 +216,7 @@ export default function AccountProfilePage() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={handleUploadAvatar}
+                  onChange={handleFileSelected}
                   disabled={uploading}
                 />
               </label>
@@ -265,21 +269,21 @@ function PlanSection({
   user: UserProfile;
   onUpgrade: () => void;
 }) {
-  const isVip =
-    (user.plan_type === "MONTH" || user.plan_type === "YEAR") &&
-    (user.plan_status === "active" || user.plan_status === "trialing");
+  const tier = getUserTier(user)
 
   const planLabel =
-    user.plan_type === "MONTH" ? "VIP รายเดือน"
-    : user.plan_type === "YEAR" ? "VIP รายปี"
-    : "Freemium";
+    tier === "vip"
+      ? user.plan_type === "MONTH" ? "VIP รายเดือน" : "VIP รายปี"
+    : tier === "trial"
+      ? "ทดลองใช้ 30 วัน"
+    : "Freemium"
 
   const expiryDate =
-    isVip && user.plan_current_period_end
+    (tier === "vip" || tier === "trial") && user.plan_current_period_end
       ? new Date(user.plan_current_period_end).toLocaleDateString("th-TH", {
           year: "numeric", month: "long", day: "numeric",
         })
-      : null;
+      : null
 
   return (
     <div className="mb-4 flex items-center justify-between">
@@ -290,9 +294,11 @@ function PlanSection({
           <div className="text-xs text-slate-500">หมดอายุ {expiryDate}</div>
         )}
       </div>
-      {isVip ? (
-        <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-900">
-          VIP
+      {tier !== "basic" ? (
+        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${
+          tier === "vip" ? "bg-amber-400 text-amber-900" : "bg-violet-200 text-violet-800"
+        }`}>
+          {tier === "vip" ? "VIP" : "TRIAL"}
         </span>
       ) : (
         <button
@@ -304,7 +310,7 @@ function PlanSection({
         </button>
       )}
     </div>
-  );
+  )
 }
 
 function Divider() {

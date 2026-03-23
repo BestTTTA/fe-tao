@@ -212,6 +212,8 @@ export async function GET(request: NextRequest) {
         })
         return conflictResponse
       }
+      const { initTrialIfNeeded } = await import('@/lib/init-trial')
+      await initTrialIfNeeded(signedInUser.id)
     }
 
     // 📋 ตรวจสอบว่ายอมรับข้อตกลงแล้วหรือยัง

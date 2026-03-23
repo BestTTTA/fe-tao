@@ -116,14 +116,14 @@ export default function TransparentHeader({
 
   return (
     <header className={`pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-center px-4 pt-4 ${className}`}>
-      <div className="pointer-events-auto relative flex w-full max-w-[390px] items-center justify-between">
+      <div className="pointer-events-auto relative flex w-full max-w-[390px] items-center gap-2">
 
-        {/* Left: Back or Search */}
+        {/* Left: Back or Search — shrink-0 ป้องกันถูกบีบ */}
         {r.showBack ? (
           <button
             aria-label="Back"
             onClick={handleBack}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-slate-700 shadow-md ring-1 ring-black/5 backdrop-blur hover:bg-white"
+            className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-slate-700 shadow-md ring-1 ring-black/5 backdrop-blur hover:bg-white"
           >
             <Image src="/icons-general/name=arrow-left.svg" alt="Back" width={20} height={20} />
           </button>
@@ -131,7 +131,7 @@ export default function TransparentHeader({
           <button
             aria-label="Search"
             onClick={handleSearch}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-slate-700 shadow-md ring-1 ring-black/5 backdrop-blur hover:bg-white"
+            className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-slate-700 shadow-md ring-1 ring-black/5 backdrop-blur hover:bg-white"
           >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="7" />
@@ -139,16 +139,16 @@ export default function TransparentHeader({
             </svg>
           </button>
         ) : (
-          <div className="h-10 w-10" />
+          <div className="shrink-0 h-10 w-10" />
         )}
 
-        {/* Center: Logo or Title */}
-        <button onClick={() => router.push("/")} aria-label="Home" className="select-none text-center tracking-wide">
+        {/* Center: Logo or Title — flex-1 รับ space ที่เหลือ, truncate ถ้า title ยาว */}
+        <button onClick={() => router.push("/")} aria-label="Home" className="flex-1 min-w-0 select-none text-center tracking-wide">
           {r.showLogo && logoSrc ? (
             <Image src={logoSrc} alt="Logo" width={20} height={20} />
           ) : (
             <>
-              <div className="text-[28px] font-normal leading-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">{r.title}</div>
+              <div className="truncate text-[28px] font-normal leading-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">{r.title}</div>
               {r.subtitle && (
                 <div className="-mt-0.5 text-sm font-semibold uppercase tracking-[0.2em] text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
                   {r.subtitle}
@@ -163,7 +163,7 @@ export default function TransparentHeader({
           <button
             aria-label={r.rightAction === "share" ? "Share" : r.rightAction === "dots-menu" ? "Options" : "Menu"}
             onClick={handleRight}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-slate-700 shadow-md ring-1 ring-black/5 backdrop-blur hover:bg-white"
+            className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-slate-700 shadow-md ring-1 ring-black/5 backdrop-blur hover:bg-white"
           >
             <div className="relative">
               {r.rightAction === "share" ? (
@@ -199,7 +199,7 @@ export default function TransparentHeader({
             </div>
           </button>
         ) : (
-          <div className="h-10 w-10" />
+          <div className="shrink-0 h-10 w-10" />
         )}
 
       </div>

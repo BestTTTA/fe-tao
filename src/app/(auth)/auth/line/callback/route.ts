@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
       .eq('line_user_id', profile.userId)
       .maybeSingle()
 
+
     const email = `line_${profile.userId}@line.placeholder.com`
 
     if (existingUser?.email) {
@@ -121,6 +122,24 @@ export async function GET(request: NextRequest) {
 
       if (signInError) {
         throw signInError
+      }
+
+      // Sync nick_name + avatar จาก LINE (อัปเดตทุกครั้งที่ login)
+      const { data: { user: signedInForSync } } = await supabase.auth.getUser()
+      if (signedInForSync) {
+        const { createClient: createServiceClient } = await import('@supabase/supabase-js')
+        const adminForSync = createServiceClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          { auth: { autoRefreshToken: false, persistSession: false } }
+        )
+        await adminForSync
+          .from('profiles')
+          .update({
+            nick_name: profile.displayName ?? null,
+            avatar_url: profile.pictureUrl ?? null,
+          })
+          .eq('id', signedInForSync.id)
       }
 
       console.log('Existing LINE user signed in')
@@ -140,8 +159,13 @@ export async function GET(request: NextRequest) {
           options: {
             emailRedirectTo: `${origin}/auth/callback`,
             data: {
-              full_name: profile.displayName,
-              avatar_url: profile.pictureUrl,
+              // ชื่อเล่น = displayName จาก LINE
+              nick_name: profile.displayName ?? null,
+              // ชื่อ-นามสกุล LINE ไม่ได้ให้ → null
+              full_name: null,
+              avatar_url: profile.pictureUrl ?? null,
+              // email จริง LINE ไม่ได้ให้ → null
+              email: null,
               line_user_id: profile.userId,
               provider: 'line',
             },
@@ -286,6 +310,9 @@ export async function GET(request: NextRequest) {
         })
         return conflictResponse
       }
+      // ตั้งค่า trial 30 วันเฉพาะ LINE user ใหม่รอบแรกเท่านั้น
+      const { initTrialIfNeeded } = await import('@/lib/init-trial')
+      await initTrialIfNeeded(signedInUser.id)
     }
 
     // 📋 ตรวจสอบว่ายอมรับข้อตกลงแล้วหรือยัง

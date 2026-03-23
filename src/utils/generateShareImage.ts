@@ -83,10 +83,13 @@ export async function generateShareImage(opts: GenerateShareImageOptions): Promi
   const { question, deckName, cardUrls, profileName, showName, avatarUrl, showAvatar, socials } = opts;
 
   const SIZE = 1080;
+  // render ที่ 2x เพื่อป้องกันภาพแตกบน HiDPI/Retina
+  const SCALE = 2;
   const canvas = document.createElement('canvas');
-  canvas.width = SIZE;
-  canvas.height = SIZE;
+  canvas.width = SIZE * SCALE;
+  canvas.height = SIZE * SCALE;
   const ctx = canvas.getContext('2d')!;
+  ctx.scale(SCALE, SCALE);
 
   // Load all images in parallel
   const [bgImg, avatarImg, ...cardImgResults] = await Promise.all([
@@ -126,10 +129,7 @@ export async function generateShareImage(opts: GenerateShareImageOptions): Promi
   ctx.fillText(`ไพ่ทาโรต์ ชุด ${deckName}`, SIZE / 2, ty + 8);
   ty += 52;
 
-  // --- 3. Cards (square format, arranged by spread pattern) ---
-  const cardAreaTop = ty + 16;
-  const cardAreaBottom = SIZE - 240;
-  const cardAreaH = cardAreaBottom - cardAreaTop;
+  // --- 3. Cards ---
   const n = cardImgResults.length;
 
   let rows: number[][];
@@ -147,114 +147,174 @@ export async function generateShareImage(opts: GenerateShareImageOptions): Promi
   const rowCount = rows.length;
   const cardGap = 14;
   const maxColCount = Math.max(...rows.map(r => r.length));
-  const cardHByArea = (cardAreaH - cardGap * (rowCount - 1)) / rowCount;
-  const cardWByArea = (SIZE - PAD * 2 - cardGap * (maxColCount - 1)) / maxColCount;
-  // Use actual card ratio (portrait tarot ~0.68 w:h)
-  const cardH = Math.min(cardHByArea, cardWByArea / 0.68, 300);
-  const cardW = cardH * 0.68;
+
+  // หา representative ratio จากใบแรกที่โหลดสำเร็จ
+  const firstImg = cardImgResults.find(img => img !== null);
+  const representativeRatio = firstImg
+    ? firstImg.naturalWidth / firstImg.naturalHeight
+    : 0.68;
+
+  // จอง bottom section ก็ต่อเมื่อมี avatar / ชื่อ / socials จริงๆ
+  const hasBottomContent =
+    (showAvatar && !!avatarUrl) ||
+    (showName && !!profileName) ||
+    socials.some(s => s.handle.trim());
+  const BOTTOM_H = hasBottomContent ? 160 : 24;
+  // พื้นที่ทั้งหมดที่เหลือหลังจาก header (ty) และ bottom section
+  const availableH = SIZE - ty - BOTTOM_H;
+
+  // target = ใช้ความสูงเต็มที่มี, ความกว้าง 80% ของ canvas
+  const targetW = SIZE * 0.8;
+  const targetH = availableH;
+
+  const cardHByW = (targetW - cardGap * (maxColCount - 1)) / (maxColCount * representativeRatio);
+  const cardHByH = (targetH - cardGap * (rowCount - 1)) / rowCount;
+  const cardH = Math.min(cardHByW, cardHByH);
 
   const totalGridH = cardH * rowCount + cardGap * (rowCount - 1);
-  let rowY = cardAreaTop + (cardAreaH - totalGridH) / 2;
+
+  // วาง cards ชิดต้นหลัง header แล้วกระจาย space ที่เหลือเท่า ๆ กัน
+  const spaceAboveCards = Math.max(16, (availableH - totalGridH) * 0.35);
+  let rowY = ty + spaceAboveCards;
   for (const row of rows) {
-    const rowW = row.length * cardW + (row.length - 1) * cardGap;
-    let cx = (SIZE - rowW) / 2;
-    for (const idx of row) {
+    // คำนวณ cardW ของแต่ละใบจาก ratio จริงของภาพนั้น
+    const rowCardWidths = row.map(idx => {
       const img = cardImgResults[idx];
+      const ratio = img ? img.naturalWidth / img.naturalHeight : representativeRatio;
+      return cardH * ratio;
+    });
+    const rowW = rowCardWidths.reduce((a, b) => a + b, 0) + (row.length - 1) * cardGap;
+    let cx = (SIZE - rowW) / 2;
+    for (let ri = 0; ri < row.length; ri++) {
+      const img = cardImgResults[row[ri]];
+      const cardW = rowCardWidths[ri];
       if (img) drawRoundedImage(ctx, img, cx, rowY, cardW, cardH, 12);
       cx += cardW + cardGap;
     }
     rowY += cardH + cardGap;
   }
+  const cardsBottom = rowY - cardGap; // actual bottom edge of last card row
 
-  // --- 4. Profile avatar (center bottom) ---
-  const profileR = 56;
-  const profileCx = SIZE / 2;
-  const profileCy = SIZE - 130;
-
-  if (showAvatar && avatarImg) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(profileCx, profileCy, profileR, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(avatarImg, profileCx - profileR, profileCy - profileR, profileR * 2, profileR * 2);
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(profileCx, profileCy, profileR, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  // --- 5. Name below avatar ---
-  if (showName && profileName) {
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `bold 28px "Noto Sans Thai", "Sarabun", sans-serif`;
-    ctx.fillText(profileName, profileCx, profileCy + profileR + 38);
-  }
-
-  // --- 6. Social icons: โค้งลงจาก avatar ซ้าย-ขวา ---
+  // --- 4. Bottom section: [socials_left] [avatar+name] [socials_right] ในแถวเดียว ---
   const validSocials = socials
     .map((s, i) => ({ ...s, img: socialImgs[i] }))
     .filter(s => s.handle.trim());
 
-  const iconSize = 48;
-  const iconGap = 12;
-  const avatarEdgeGap = 20;
-  // ระยะ Y ที่เลื่อนลงต่อ icon (สร้างเอฟเฟกต์โค้ง)
-  const curveStep = 30;
+  const iconSize = 42;
+  const nameFont = `bold 24px "Noto Sans Thai", "Sarabun", sans-serif`;
+  const handleFont = `14px "Noto Sans Thai", "Sarabun", sans-serif`;
 
+  const hasAvatar = showAvatar && avatarImg;
+  const hasName = showName && profileName;
+
+  // Profile name: แสดงครบ ถ้ายาวเกินจะลด font size ลงอัตโนมัติ
+  const displayName = profileName || '';
+  const maxNameWidth = SIZE - PAD * 2;
+
+  // Truncate social handles & measure widths
+  ctx.font = handleFont;
+  const maxHandleW = 90;
+  const truncatedHandles: string[] = [];
+  const handleWidths: number[] = [];
+  for (const s of validSocials) {
+    let h = s.handle;
+    while (h.length > 0 && ctx.measureText(h).width > maxHandleW) {
+      h = h.slice(0, -1);
+    }
+    if (h.length < s.handle.length) h = h.slice(0, -1) + '…';
+    truncatedHandles.push(h);
+    handleWidths.push(Math.max(iconSize, ctx.measureText(h).width));
+  }
+
+  // Split socials left / right of avatar
   const leftCount = Math.ceil(validSocials.length / 2);
   const leftSocials = validSocials.slice(0, leftCount);
   const rightSocials = validSocials.slice(leftCount);
+  const leftHandles = truncatedHandles.slice(0, leftCount);
+  const rightHandles = truncatedHandles.slice(leftCount);
+  const leftWidths = handleWidths.slice(0, leftCount);
+  const rightWidths = handleWidths.slice(leftCount);
 
-  // Left socials: ตัวใกล้ avatar อยู่สูง ตัวไกลลาดลงมา
-  let lrx = profileCx - profileR - avatarEdgeGap;
-  for (let si = 0; si < leftSocials.length; si++) {
-    const s = leftSocials[leftSocials.length - 1 - si]; // วาดจากใกล้ avatar ออก
-    const ix = lrx - iconSize;
-    const iy = profileCy - iconSize / 2 + curveStep * si;
-    if (s.img) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(ix + iconSize / 2, iy + iconSize / 2, iconSize / 2, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(s.img, ix, iy, iconSize, iconSize);
-      ctx.restore();
-    }
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `18px "Noto Sans Thai", "Sarabun", sans-serif`;
-    ctx.fillText(s.handle, ix + iconSize / 2, iy + iconSize + 22);
-    lrx = ix - iconGap;
+  const profileR = 46;
+  const socialItemGap = 14;
+  const centerGap = 20; // gap between center and social columns
+
+  // Row vertical center — center bottom section in remaining space below cards
+  const rowCenterY = Math.min(SIZE - profileR - 50, Math.round(cardsBottom + (SIZE - cardsBottom) / 2));
+  const profileCx = SIZE / 2;
+
+  // --- Draw avatar ---
+  if (hasAvatar) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(profileCx, rowCenterY, profileR, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(avatarImg!, profileCx - profileR, rowCenterY - profileR, profileR * 2, profileR * 2);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(profileCx, rowCenterY, profileR, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
-  // Right socials: ตัวใกล้ avatar อยู่สูง ตัวไกลลาดลงมา
-  let rlx = profileCx + profileR + avatarEdgeGap;
-  for (let si = 0; si < rightSocials.length; si++) {
-    const s = rightSocials[si];
-    const ix = rlx;
-    const iy = profileCy - iconSize / 2 + curveStep * si;
+  // --- Name below avatar ---
+  if (hasName) {
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    // ลด font size ลงจนกว่าชื่อจะพอดีกับความกว้าง
+    let nameFontSize = 24;
+    const minNameFontSize = 14;
+    ctx.font = `bold ${nameFontSize}px "Noto Sans Thai", "Sarabun", sans-serif`;
+    while (ctx.measureText(displayName).width > maxNameWidth && nameFontSize > minNameFontSize) {
+      nameFontSize -= 1;
+      ctx.font = `bold ${nameFontSize}px "Noto Sans Thai", "Sarabun", sans-serif`;
+    }
+    const nameY = hasAvatar ? rowCenterY + profileR + 28 : rowCenterY + 10;
+    ctx.fillText(displayName, profileCx, nameY);
+  }
+
+  // --- Helper: draw one social item (icon + handle) centered at cx ---
+  const drawSocialItem = (s: typeof validSocials[0], handle: string, cx: number) => {
+    const iy = rowCenterY - iconSize / 2;
+    const ix = cx - iconSize / 2;
     if (s.img) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(ix + iconSize / 2, iy + iconSize / 2, iconSize / 2, 0, Math.PI * 2);
+      ctx.arc(cx, rowCenterY, iconSize / 2, 0, Math.PI * 2);
       ctx.clip();
       ctx.drawImage(s.img, ix, iy, iconSize, iconSize);
       ctx.restore();
     }
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
-    ctx.font = `18px "Noto Sans Thai", "Sarabun", sans-serif`;
-    ctx.fillText(s.handle, ix + iconSize / 2, iy + iconSize + 22);
-    rlx = ix + iconSize + iconGap;
+    ctx.font = handleFont;
+    ctx.fillText(handle, cx, rowCenterY + iconSize / 2 + 18);
+  };
+
+  // --- Left socials: วาดจากขวาไปซ้าย (ใกล้ avatar → ไกล) ---
+  let lx = profileCx - (hasAvatar ? profileR : 0) - centerGap;
+  for (let i = leftSocials.length - 1; i >= 0; i--) {
+    const w = leftWidths[i];
+    const cx = lx - w / 2;
+    drawSocialItem(leftSocials[i], leftHandles[i], cx);
+    lx = cx - w / 2 - socialItemGap;
+  }
+
+  // --- Right socials: วาดจากซ้ายไปขวา (ใกล้ avatar → ไกล) ---
+  let rx = profileCx + (hasAvatar ? profileR : 0) + centerGap;
+  for (let i = 0; i < rightSocials.length; i++) {
+    const w = rightWidths[i];
+    const cx = rx + w / 2;
+    drawSocialItem(rightSocials[i], rightHandles[i], cx);
+    rx = cx + w / 2 + socialItemGap;
   }
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       blob => blob ? resolve(blob) : reject(new Error('toBlob failed')),
       'image/jpeg',
-      0.92
+      1.0
     );
   });
 }

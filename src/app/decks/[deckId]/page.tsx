@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import TransparentHeader from "@/components/TransparentHeader";
 import TarotCarousel from "@/components/TarotCarousel";
+import { getUserTier, hasPremiumAccess } from "@/lib/user-tier";
 
 type Deck = {
   id: number;
@@ -39,20 +40,15 @@ export default async function DeckDetailPage({
   const { data: u } = await supabase.auth.getUser();
   const uid = u.user?.id ?? null;
 
-  const profile =
-    uid
-      ? await supabase
-          .from("profiles")
-          .select("plan_type, plan_status")
-          .eq("id", uid)
-          .maybeSingle()
-      : { data: null };
+  const profileRes = uid
+    ? await supabase
+        .from("profiles")
+        .select("plan_type, plan_status, plan_current_period_end")
+        .eq("id", uid)
+        .maybeSingle()
+    : { data: null };
 
-  const isVip =
-    !!profile.data &&
-    (profile.data.plan_type === "MONTH" || profile.data.plan_type === "YEAR") &&
-    (profile.data.plan_status === "active" ||
-      profile.data.plan_status === "trialing");
+  const isPremium = hasPremiumAccess(getUserTier(profileRes.data));
 
   // โหลดข้อมูลเด็ค
   const { data: deck, error: dErr } = await supabase
@@ -63,7 +59,7 @@ export default async function DeckDetailPage({
 
   if (dErr || !deck) return notFound();
 
-  const canSeeCards = deck.free || isVip;
+  const canSeeCards = deck.free || isPremium;
 
   let cards: Card[] = [];
   if (canSeeCards) {
@@ -129,7 +125,7 @@ export default async function DeckDetailPage({
               สมัครเพื่อดูรายละเอียดไพ่ทั้งหมดได้ไม่จำกัด
             </p>
             <Link
-              href="/pricing"
+              href="/packages"
               className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-violet-700 px-4 py-3 text-[15px] font-semibold text-white hover:bg-violet-800"
             >
               สมัคร VIP

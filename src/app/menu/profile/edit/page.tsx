@@ -185,7 +185,6 @@ export default function EditProfilePage() {
             showSearch: false,
             showMenu: false,
             showBack: true,
-            backPath: "/menu/profile",
           },
         }}
       />

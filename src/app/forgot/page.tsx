@@ -7,16 +7,18 @@ import TransparentHeader from "@/components/TransparentHeader";
 import { requestPasswordReset } from "@/lib/auth-actions";
 import { useLoading } from "@/components/LoadingOverlay";
 import { useFormStatus } from "react-dom";
+import { useLanguage } from "@/lib/i18n";
 
 function ForgotPasswordForm() {
   const sp = useSearchParams();
   const sent = sp.get("sent") === "1";
   const [email, setEmail] = useState("");
+  const { t } = useLanguage();
 
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-slate-900 via-violet-900/40 to-slate-950 text-white">
       <TransparentHeader
-        title="รีเซ็ตรหัสผ่าน"
+        title={t.forgot.title}
         subtitle=""
         routeRules={{
           "/forgot": {
@@ -35,22 +37,22 @@ function ForgotPasswordForm() {
       <div className="mx-auto max-w-md px-4 pt-28 pb-24">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur">
           <h1 className="text-center text-2xl font-extrabold tracking-tight">
-            รีเซ็ตรหัสผ่าน
+            {t.forgot.title}
           </h1>
 
           <p className="mt-2 text-center text-white/80">
-            กรุณากรอกอีเมลของคุณ เราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านให้คุณ
+            {t.forgot.description}
           </p>
 
           {sent && (
             <p className="mt-3 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-200">
-              ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว โปรดเช็คกล่องจดหมาย/สแปม
+              {t.forgot.sent}
             </p>
           )}
 
           <div className="mt-6">
             <form action={requestPasswordReset} className="space-y-3">
-              <label className="block text-sm text-white/90">อีเมล</label>
+              <label className="block text-sm text-white/90">{t.forgot.email}</label>
               <input
                 name="email"
                 type="email"
@@ -64,18 +66,18 @@ function ForgotPasswordForm() {
                 type="submit"
                 className="inline-flex w-full items-center justify-center rounded-xl bg-violet-700 px-4 py-3 text-[15px] font-semibold text-white shadow hover:bg-violet-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               >
-                ส่งลิงก์รีเซ็ตรหัสผ่าน
+                {t.forgot.submit}
               </button>
             </form>
           </div>
 
           <p className="mt-6 text-center text-sm text-white/70">
-            เคล็ดลับ: ค้นหาอีเมลจาก &ldquo;Supabase&rdquo; หรือเช็คโฟลเดอร์สแปมด้วยนะ
+            {t.forgot.tip}
           </p>
 
           <div className="mt-6 text-center">
             <Link href="/login" className="text-sm text-white/80 underline hover:text-white">
-              กลับไปหน้าเข้าสู่ระบบ
+              {t.forgot.backToLogin}
             </Link>
           </div>
         </div>

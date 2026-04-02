@@ -7,11 +7,13 @@ import {
   signInWithLine
 } from '@/lib/auth-actions';
 import Image from 'next/image';
+import { useLanguage } from '@/lib/i18n';
 
 export default function SocialLogin() {
+  const { t } = useLanguage();
   return (
     <div className="text-center">
-      <div className="text-sm text-white/80">เข้าสู่ระบบด้วย Social Network</div>
+      <div className="text-sm text-white/80">{t.login.socialLogin}</div>
       <div className="mt-3 flex items-center justify-center gap-4">
         <SocialButton ariaLabel="Login with Facebook" onClick={signInWithFacebook}>
           <FbIcon />

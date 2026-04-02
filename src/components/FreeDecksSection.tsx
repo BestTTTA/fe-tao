@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { useLanguage } from "@/lib/i18n";
 
 type Deck = {
   id: number;
@@ -14,15 +15,14 @@ type Deck = {
 type FavoriteRow = { deck_id: number }; // ← ตรงกับ select("deck_id")
 
 export default function FreeDecksSection({
-  title = "ไพ่ฟรีเฉพาะสมาชิก",
   limit = 20,
   className = "",
 }: {
-  title?: string;
   limit?: number;
   className?: string;
 }) {
   const supabase = createClient();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [decks, setDecks] = useState<Deck[]>([]);
   const [favDeckIds, setFavDeckIds] = useState<Set<number>>(new Set());
@@ -83,7 +83,7 @@ export default function FreeDecksSection({
   const toggleFavorite = useCallback(
     async (deckId: number) => {
       if (!profileId) {
-        alert("กรุณาเข้าสู่ระบบก่อนบันทึกเป็นรายการโปรด");
+        alert(t.freeDecks.loginToFavorite);
         return;
       }
 
@@ -147,7 +147,7 @@ export default function FreeDecksSection({
     }
 
     if (!decks.length) {
-      return <p className="text-white/80">ยังไม่มีเด็คฟรีในขณะนี้</p>;
+      return <p className="text-white/80">{t.freeDecks.noDecks}</p>;
     }
 
     return (
@@ -166,7 +166,7 @@ export default function FreeDecksSection({
 
   return (
     <section className={className}>
-      <h2 className="mb-3 text-lg font-bold text-white">{title}</h2>
+      <h2 className="mb-3 text-lg font-bold text-white">{t.freeDecks.title}</h2>
       {content}
     </section>
   );
@@ -181,6 +181,7 @@ function DeckCard({
   isFav: boolean;
   onToggleFav: () => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="relative rounded-2xl border bg-white p-2">
 
@@ -196,7 +197,7 @@ function DeckCard({
 
         <button
           onClick={onToggleFav}
-          aria-label={isFav ? "นำออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
+          aria-label={isFav ? t.freeDecks.removeFavorite : t.freeDecks.addFavorite}
           className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full  text-slate-800"
         >
           {isFav ? <HeartSolid /> : <Heart />}
@@ -212,13 +213,13 @@ function DeckCard({
           href={`/decks/${deck.id}`}
           className="inline-flex flex-1 items-center justify-center rounded-xl bg-white/10 px-3 py-2 text-[13px] font-semibold text-black ring-1 ring-black hover:bg-white/20"
         >
-          ดูข้อมูล
+          {t.freeDecks.viewInfo}
         </Link>
         <Link
-          href={`/reading?deck=${deck.id}`} 
+          href={`/reading?deck=${deck.id}`}
           className="inline-flex flex-1 items-center justify-center rounded-xl bg-botton-main px-3 py-2 text-[13px] font-semibold text-white"
         >
-          ดูดวง
+          {t.freeDecks.readFortune}
         </Link>
 
       </div>

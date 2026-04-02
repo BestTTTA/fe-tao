@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useLanguage } from "@/lib/i18n";
 
 interface StatusModalProps {
   status: string | null;
@@ -12,10 +13,9 @@ export default function StatusModal({
   purchasedPlan,
 }: StatusModalProps) {
   // ✅ กรองเฉพาะ status ที่ต้องใช้จริง
+  const { t } = useLanguage();
   const allowedStatuses = ["success", "cancel"];
   if (!status || !allowedStatuses.includes(status)) return null;
-
-  console.log("StatusModal:", status);
 
   const color =
     status === "success"
@@ -24,8 +24,8 @@ export default function StatusModal({
 
   const message =
     status === "success"
-      ? `✅ ซื้อ ${purchasedPlan ?? "แพ็คเกจ"} สำเร็จแล้ว!`
-      : "⚠️ ยกเลิกการชำระเงิน";
+      ? `${t.statusModal.purchaseSuccess} ${purchasedPlan ?? t.statusModal.package} ${t.statusModal.purchaseSuccessSuffix}`
+      : t.statusModal.purchaseCancelled;
 
   return (
     <div

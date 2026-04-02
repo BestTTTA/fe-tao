@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { LoadingProvider } from "@/components/LoadingOverlay";
+import { LanguageProvider } from "@/lib/i18n";
 
 const notoSansThai = Noto_Sans_Thai({
   weight: ["400"],
@@ -83,7 +84,9 @@ export default function RootLayout({
       <body
         className={`${notoSansThai.className} bg-[url('/bg/bg.jpg')] bg-cover bg-no-repeat pt-6`}
       >
-        <LoadingProvider>{children}</LoadingProvider>
+        <LanguageProvider>
+          <LoadingProvider>{children}</LoadingProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

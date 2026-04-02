@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import { useLanguage } from '@/lib/i18n'
 
 export default function SessionConflictPage() {
+  const { t } = useLanguage();
   return (
     <main className="fixed inset-0 flex items-center justify-center bg-gradient-to-b from-indigo-950 via-violet-950 to-slate-900">
       <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
@@ -26,17 +28,17 @@ export default function SessionConflictPage() {
         </div>
 
         <h2 className="mb-2 text-lg font-bold text-slate-900">
-          ไม่สามารถเข้าสู่ระบบได้
+          {t.sessionConflict.title}
         </h2>
         <p className="mb-6 text-sm leading-relaxed text-slate-500">
-          เนื่องจากบัญชีนี้กำลังถูกใช้งานอยู่ในอุปกรณ์อื่น
+          {t.sessionConflict.description}
         </p>
 
         <Link
           href="/login"
           className="block w-full rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white hover:bg-violet-800 active:bg-violet-900 transition-colors"
         >
-          ปิด
+          {t.common.close}
         </Link>
       </div>
     </main>

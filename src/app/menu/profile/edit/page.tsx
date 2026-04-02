@@ -8,6 +8,7 @@ import ThaiAddressFields from "@/components/ThaiAddressFields";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useLoading } from "@/components/LoadingOverlay";
+import { useLanguage } from "@/lib/i18n";
 
 type SocialKey = "facebook" | "instagram" | "tiktok" | "line" | "youtube";
 
@@ -39,6 +40,7 @@ export default function EditProfilePage() {
   const supabase = createClient();
   const router = useRouter();
   const { showLoading, hideLoading } = useLoading();
+  const { t } = useLanguage();
 
   const [data, setData] = useState<FormState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,9 +133,9 @@ export default function EditProfilePage() {
     if (!data) return;
     try {
       setSaving(true);
-      showLoading("กำลังบันทึก...");
+      showLoading(t.common.saving);
       const { data: { user: sessionUser } } = await supabase.auth.getUser();
-      if (!sessionUser) throw new Error("ไม่พบผู้ใช้");
+      if (!sessionUser) throw new Error(t.profileEdit.noUserFound);
 
       const full_name = [data.firstName, data.lastName].filter(Boolean).join(" ").trim();
       const normalizedPhone = (data.phone || "").replace(/\D/g, "").slice(0, 10);
@@ -166,7 +168,7 @@ export default function EditProfilePage() {
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error("Error updating profile:", err);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      alert(t.profileEdit.saveError);
     } finally {
       setSaving(false);
       hideLoading();
@@ -174,15 +176,15 @@ export default function EditProfilePage() {
   };
 
   if (loading)
-    return <div className="flex h-screen items-center justify-center text-white">กำลังโหลดข้อมูล...</div>;
+    return <div className="flex h-screen items-center justify-center text-white">{t.profileEdit.loading}</div>;
 
   if (!data)
-    return <div className="flex h-screen items-center justify-center text-white">ไม่พบข้อมูลผู้ใช้</div>;
+    return <div className="flex h-screen items-center justify-center text-white">{t.profileEdit.noUser}</div>;
 
   return (
     <main className="relative min-h-screen">
       <TransparentHeader
-        title="แก้ไขข้อมูลส่วนตัว"
+        title={t.profileEdit.title}
         subtitle=""
         routeRules={{
           "/menu/profile/edit": {
@@ -199,25 +201,25 @@ export default function EditProfilePage() {
       <form id="profile-form" onSubmit={onSubmit} className="mx-auto max-w-md px-4 pb-[100px] text-white space-y-3">
 
         {/* ชื่อ-นามสกุล-ชื่อเล่น-เบอร์-อีเมล */}
-        <Field label="ชื่อ">
-          <Input value={data.firstName} onChange={(v) => setData({ ...data, firstName: v })} placeholder="สมชาย" />
+        <Field label={t.profileEdit.firstName}>
+          <Input value={data.firstName} onChange={(v) => setData({ ...data, firstName: v })} placeholder={t.profileEdit.firstNamePlaceholder} />
         </Field>
-        <Field label="นามสกุล">
-          <Input value={data.lastName} onChange={(v) => setData({ ...data, lastName: v })} placeholder="สมชาย" />
+        <Field label={t.profileEdit.lastName}>
+          <Input value={data.lastName} onChange={(v) => setData({ ...data, lastName: v })} placeholder={t.profileEdit.firstNamePlaceholder} />
         </Field>
-        <Field label="ชื่อเล่น">
-          <Input value={data.nickName} onChange={(v) => setData({ ...data, nickName: v })} placeholder="สมชาย" />
+        <Field label={t.profileEdit.nickname}>
+          <Input value={data.nickName} onChange={(v) => setData({ ...data, nickName: v })} placeholder={t.profileEdit.firstNamePlaceholder} />
         </Field>
-        <Field label="เบอร์โทรศัพท์">
-          <LockedInput value={data.phone} placeholder="08xxxxxxxx" hint="ติดต่อเจ้าหน้าที่เพื่อเปลี่ยนเบอร์โทร" />
+        <Field label={t.profileEdit.phone}>
+          <LockedInput value={data.phone} placeholder={t.profileEdit.phonePlaceholder} hint={t.profileEdit.phoneHelp} />
         </Field>
-        <Field label="อีเมล">
-          <LockedInput value={data.email} placeholder="example@email.com" hint="ติดต่อเจ้าหน้าที่เพื่อเปลี่ยนอีเมล" />
+        <Field label={t.profileEdit.email}>
+          <LockedInput value={data.email} placeholder={t.profileEdit.emailPlaceholder} hint={t.profileEdit.emailHelp} />
         </Field>
 
-        {/* ที่อยู่ */}
-        <Field label="ที่อยู่">
-          <Input value={data.address} onChange={(v) => setData({ ...data, address: v })} placeholder="123/45 ถนนสุขสันต์" />
+        {/* Address */}
+        <Field label={t.profileEdit.addressLabel}>
+          <Input value={data.address} onChange={(v) => setData({ ...data, address: v })} placeholder={t.profileEdit.addressPlaceholder} />
         </Field>
         <ThaiAddressFields
           subDistrict={data.subDistrict}
@@ -229,10 +231,10 @@ export default function EditProfilePage() {
 
         {/* ข้อมูลที่จะปรากฏในรูปภาพที่ต้องการแชร์ */}
         <div className="pt-3">
-          <p className="text-base font-bold text-white">ข้อมูลที่จะปรากฏในรูปภาพที่ต้องการแชร์</p>
+          <p className="text-base font-bold text-white">{t.profileEdit.shareInfoSection}</p>
           <div className="mt-2 h-px bg-white/20" />
           <div className="mt-3 space-y-3">
-            <p className="text-xs font-semibold text-white/70">ข้อมูลโปรไฟล์ของคุณ</p>
+            <p className="text-xs font-semibold text-white/70">{t.profileEdit.profileSection}</p>
             <label className="flex items-center gap-3 cursor-pointer">
               <div className="h-6 w-6 flex-none rounded border-2 border-white bg-white flex items-center justify-center">
                 {data.showDisplayName && (
@@ -242,7 +244,7 @@ export default function EditProfilePage() {
                 )}
               </div>
               <input type="checkbox" checked={data.showDisplayName} onChange={(e) => setData({ ...data, showDisplayName: e.target.checked })} className="sr-only" />
-              <span className="text-sm text-white">ชื่อผู้ใช้งาน</span>
+              <span className="text-sm text-white">{t.profileEdit.username}</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
               <div className="h-6 w-6 flex-none rounded border-2 border-white bg-white flex items-center justify-center">
@@ -253,7 +255,7 @@ export default function EditProfilePage() {
                 )}
               </div>
               <input type="checkbox" checked={data.showAvatar} onChange={(e) => setData({ ...data, showAvatar: e.target.checked })} className="sr-only" />
-              <span className="text-sm text-white">รูปโปรไฟล์</span>
+              <span className="text-sm text-white">{t.profileEdit.profilePicture}</span>
             </label>
           </div>
           <div className="mt-3 h-px bg-white/20" />
@@ -262,7 +264,7 @@ export default function EditProfilePage() {
         {/* Social Media */}
         <div className="pt-2">
           <p className="mb-2 text-sm font-semibold text-white/90">
-            Social Media <span className="font-normal text-white/60">(สูงสุด 3 รายการ)</span>
+            {t.profileEdit.socialMedia} <span className="font-normal text-white/60">{t.profileEdit.socialMax}</span>
           </p>
           <div className="space-y-6">
             {(Object.keys(SOCIAL_META) as SocialKey[]).map((key) => {
@@ -289,7 +291,7 @@ export default function EditProfilePage() {
                   {/* Input ชื่อ - อยู่นอกกล่อง */}
                   {social.selected && (
                     <div className="mt-1.5 px-1">
-                      <p className="mb-1 text-xs text-white/80">ชื่อ {meta.label}</p>
+                      <p className="mb-1 text-xs text-white/80">{t.profileEdit.name} {meta.label}</p>
                       <input
                         type="text"
                         value={social.handle}
@@ -317,7 +319,7 @@ export default function EditProfilePage() {
               saved ? "bg-green-600" : "bg-violet-700 hover:bg-violet-800"
             }`}
           >
-            {saving ? "กำลังบันทึก..." : saved ? "✓ บันทึกสำเร็จ" : "บันทึก"}
+            {saving ? t.common.saving : saved ? t.profileEdit.saveSuccess : t.common.save}
           </button>
         </div>
       </div>

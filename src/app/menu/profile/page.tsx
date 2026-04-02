@@ -13,6 +13,7 @@ import {
   isValidFileSize,
 } from "@/utils/imageCompression";
 import { useLoading } from "@/components/LoadingOverlay";
+import { useLanguage } from "@/lib/i18n";
 
 type UserProfile = {
   id: string;
@@ -32,6 +33,7 @@ export default function AccountProfilePage() {
   const supabase = createClient();
   const router = useRouter();
   const { showLoading, hideLoading } = useLoading();
+  const { t } = useLanguage();
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,11 +90,11 @@ export default function AccountProfilePage() {
     e.target.value = "";
 
     if (!isValidImageType(file)) {
-      showAlert("รูปแบบไฟล์ไม่ถูกต้อง", "กรุณาอัปโหลดเฉพาะไฟล์รูปภาพเท่านั้น");
+      showAlert(t.profile.invalidFile, t.profile.invalidFileSub);
       return;
     }
     if (!isValidFileSize(file, 20)) {
-      showAlert("ขนาดไฟล์เกินกำหนด", "กรุณาเลือกรูปภาพที่มีขนาดไม่เกิน 20 MB");
+      showAlert(t.profile.fileTooLarge, t.profile.fileTooLargeSub);
       return;
     }
 
@@ -105,7 +107,7 @@ export default function AccountProfilePage() {
     if (!user) return;
     setCropSrc(null);
     setUploading(true);
-    showLoading("กำลังอัปโหลดรูป...");
+    showLoading(t.profile.uploading);
     try {
       const compressedBlob = await compressImage(new File([croppedBlob], "avatar.webp", { type: "image/webp" }));
       const filePath = `user-profile/${user.id}.webp`;
@@ -126,10 +128,10 @@ export default function AccountProfilePage() {
       if (updateError) throw updateError;
 
       setUser({ ...user, avatar_url: publicUrl });
-      showAlert("สำเร็จ", "อัปโหลดรูปสำเร็จ!", "success");
+      showAlert(t.profile.uploadSuccess, t.profile.uploadSuccessSub, "success");
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      showAlert("เกิดข้อผิดพลาด", "เกิดข้อผิดพลาดในการอัปโหลดรูป");
+      showAlert(t.common.error, t.profile.uploadError);
     } finally {
       setUploading(false);
       hideLoading();
@@ -144,14 +146,14 @@ export default function AccountProfilePage() {
   if (loading)
     return (
       <div className="flex h-screen items-center justify-center text-white">
-        กำลังโหลดข้อมูล...
+        {t.profile.loading}
       </div>
     );
 
   if (!user)
     return (
       <div className="flex h-screen items-center justify-center text-white">
-        ไม่พบข้อมูลผู้ใช้
+        {t.profile.noUser}
       </div>
     );
 
@@ -198,7 +200,7 @@ export default function AccountProfilePage() {
 
       {/* เนื้อหา */}
       <div className="relative -mt-16 mx-auto max-w-md px-4 pb-24 text-white">
-        <h1 className="mb-3 text-2xl font-extrabold">ข้อมูลส่วนตัว</h1>
+        <h1 className="mb-3 text-2xl font-extrabold">{t.profile.title}</h1>
 
         <div className="overflow-hidden rounded-3xl bg-white/95 p-5 text-slate-900 shadow-lg ring-1 ring-black/5 backdrop-blur">
           {/* Avatar */}
@@ -226,7 +228,7 @@ export default function AccountProfilePage() {
               </label>
             </div>
             {uploading && (
-              <p className="mt-2 text-sm text-slate-600">กำลังอัปโหลด...</p>
+              <p className="mt-2 text-sm text-slate-600">{t.profile.uploading}</p>
             )}
           </div>
 
@@ -237,12 +239,12 @@ export default function AccountProfilePage() {
           <Divider />
 
           {/* รายละเอียด */}
-          <Field label="รหัสลูกค้า (Stripe)" value={user.stripe_customer_id ?? "-"} />
-          <Field label="ชื่อ-นามสกุล" value={user.full_name ?? "-"} />
-          <Field label="ชื่อเล่น" value={user.nick_name ?? "-"} />
-          <Field label="เบอร์โทรศัพท์" value={user.phone ?? "-"} />
-          <Field label="อีเมล" value={user.email ?? "-"} isEmail />
-          <Field label="ที่อยู่" value={user.address ?? "-"} multiline />
+          <Field label={t.profile.stripeId} value={user.stripe_customer_id ?? "-"} />
+          <Field label={t.profile.fullName} value={user.full_name ?? "-"} />
+          <Field label={t.profile.nickname} value={user.nick_name ?? "-"} />
+          <Field label={t.profile.phone} value={user.phone ?? "-"} />
+          <Field label={t.profile.emailLabel} value={user.email ?? "-"} isEmail />
+          <Field label={t.profile.address} value={user.address ?? "-"} multiline />
 
           {/* ปุ่มแก้ไข */}
           {/* <div className="mt-4 flex justify-center">
@@ -274,13 +276,14 @@ function PlanSection({
   onUpgrade: () => void;
 }) {
   const tier = getUserTier(user)
+  const { t } = useLanguage()
 
   const planLabel =
     tier === "vip"
-      ? user.plan_type === "MONTH" ? "VIP รายเดือน" : "VIP รายปี"
+      ? user.plan_type === "MONTH" ? t.packages.vipMonthly : t.packages.vipYearly
     : tier === "trial"
-      ? "ทดลองใช้ 30 วัน"
-    : "Freemium"
+      ? t.profile.trial30
+    : t.profile.freemium
 
   const expiryDate =
     (tier === "vip" || tier === "trial") && user.plan_current_period_end
@@ -292,17 +295,17 @@ function PlanSection({
   return (
     <div className="mb-4 flex items-center justify-between">
       <div>
-        <div className="text-sm text-slate-500">แพ็คเก็จของคุณ</div>
+        <div className="text-sm text-slate-500">{t.profile.yourPackage}</div>
         <div className="text-lg font-bold text-slate-900">{planLabel}</div>
         {expiryDate && (
-          <div className="text-xs text-slate-500">หมดอายุ {expiryDate}</div>
+          <div className="text-xs text-slate-500">{t.profile.expired} {expiryDate}</div>
         )}
       </div>
       {tier !== "basic" ? (
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${
           tier === "vip" ? "bg-amber-400 text-amber-900" : "bg-violet-200 text-[#361B62]"
         }`}>
-          {tier === "vip" ? "VIP" : "TRIAL"}
+          {tier === "vip" ? t.profile.vip : t.profile.trial}
         </span>
       ) : (
         <button
@@ -310,7 +313,7 @@ function PlanSection({
           onClick={onUpgrade}
           className="rounded-md bg-amber-400 px-3 py-1.5 text-xs font-bold text-slate-900 hover:bg-amber-300"
         >
-          สมัคร VIP
+          {t.profile.subscribeVip}
         </button>
       )}
     </div>

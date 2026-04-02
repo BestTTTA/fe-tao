@@ -6,6 +6,7 @@ import { signup } from "../../lib/auth-actions";
 import { useFormStatus } from "react-dom";
 import SocialLogin from "@/components/SocialLogin";
 import { useLoading } from "@/components/LoadingOverlay";
+import { useLanguage } from "@/lib/i18n";
 
 export default function RegisterPage() {
   const [showPass, setShowPass] = useState(false);
@@ -13,10 +14,10 @@ export default function RegisterPage() {
   const [agreeTos, setAgreeTos] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   return (
     <main className="relative min-h-screen">
-      {/* Header: ซ่อน search/menu และมีปุ่ม Back */}
       <TransparentHeader
         title="TAROT"
         subtitle="& ORACLE"
@@ -32,23 +33,21 @@ export default function RegisterPage() {
       />
 
       <div className="mx-auto max-w-md px-4 pt-24 pb-[160px] text-white">
-        <h1 className="text-2xl font-extrabold">แก้ไขข้อมูลส่วนตัว</h1>
+        <h1 className="text-2xl font-extrabold">{t.register.title}</h1>
 
-        {/* ✅ ใช้ server action โดยตรง */}
         <form action={signup} className="mt-6 space-y-6">
-          {/* ---------------- บัญชีผู้ใช้ (อีเมล/รหัสผ่าน) ---------------- */}
           <section className="space-y-4">
             {/* Email */}
             <div>
               <label htmlFor="email" className="mb-1 block text-sm text-white/90">
-                อีเมล
+                {t.register.email}
               </label>
               <input
                 id="email"
                 name="email"
                 type="email"
                 inputMode="email"
-                placeholder="กรุณาระบุอีเมล"
+                placeholder={t.register.emailPlaceholder}
                 autoComplete="email"
                 required
                 className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3"
@@ -58,14 +57,14 @@ export default function RegisterPage() {
             {/* Password */}
             <div>
               <label htmlFor="password" className="mb-1 block text-sm text-white/90">
-                รหัสผ่าน
+                {t.register.password}
               </label>
               <div className="relative">
                 <input
                   id="password"
                   name="password"
                   type={showPass ? "text" : "password"}
-                  placeholder="กรุณาระบุรหัสผ่าน"
+                  placeholder={t.register.passwordPlaceholder}
                   autoComplete="new-password"
                   minLength={8}
                   required
@@ -77,9 +76,7 @@ export default function RegisterPage() {
                     const hasDigit = /[0-9]/.test(val);
                     const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|<>?,./`~]/.test(val);
                     if (!hasLower || !hasUpper || !hasDigit || !hasSpecial) {
-                      input.setCustomValidity(
-                        "รหัสผ่านต้องมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และอักขระพิเศษ (!@#$%^&* ฯลฯ) อย่างน้อย 1 ตัว"
-                      );
+                      input.setCustomValidity(t.register.passwordRequirement);
                     } else {
                       input.setCustomValidity("");
                     }
@@ -88,7 +85,7 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  aria-label={showPass ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                  aria-label={showPass ? t.login.hidePassword : t.login.showPassword}
                   onClick={() => setShowPass((v) => !v)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-600 hover:bg-slate-100"
                 >
@@ -100,27 +97,27 @@ export default function RegisterPage() {
             {/* Confirm Password */}
             <div>
               <label htmlFor="confirm" className="mb-1 block text-sm text-white/90">
-                Password (อีกครั้ง)
+                {t.register.confirmPassword}
               </label>
               <div className="relative">
                 <input
                   id="confirm"
                   name="confirm"
                   type={showPass2 ? "text" : "password"}
-                  placeholder="กรุณาระบุรหัสผ่าน (อีกครั้ง)"
+                  placeholder={t.register.confirmPasswordPlaceholder}
                   autoComplete="new-password"
                   required
                   onInput={(e) => {
                     const c = e.currentTarget as HTMLInputElement;
                     const p = (document.getElementById("password") as HTMLInputElement)?.value;
-                    c.setCustomValidity(c.value && p && c.value !== p ? "รหัสผ่านไม่ตรงกัน" : "");
+                    c.setCustomValidity(c.value && p && c.value !== p ? t.register.passwordMismatch : "");
                     setError(null);
                   }}
                   className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3 pr-10"
                 />
                 <button
                   type="button"
-                  aria-label={showPass2 ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                  aria-label={showPass2 ? t.login.hidePassword : t.login.showPassword}
                   onClick={() => setShowPass2((v) => !v)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-600 hover:bg-slate-100"
                 >
@@ -130,74 +127,6 @@ export default function RegisterPage() {
             </div>
           </section>
 
-          {/* ---------------- ข้อมูลส่วนตัว (ตามภาพตัวอย่าง) ---------------- */}
-          {/* <section className="space-y-4">
-            <h2 className="text-sm font-semibold text-white/90">ข้อมูลโปรไฟล์ของคุณ</h2>
-
-            <div>
-              <label htmlFor="first-name" className="mb-1 block text-sm text-white/90">
-                ชื่อ
-              </label>
-              <input
-                id="first-name"
-                name="first-name"
-                type="text"
-                placeholder="สมชาย"
-                autoComplete="given-name"
-                required
-                className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="last-name" className="mb-1 block text-sm text-white/90">
-                นามสกุล
-              </label>
-              <input
-                id="last-name"
-                name="last-name"
-                type="text"
-                placeholder="สมชาย"
-                autoComplete="family-name"
-                required
-                className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="nick_name" className="mb-1 block text-sm text-white/90">
-                ชื่อเล่น
-              </label>
-              <input
-                id="nick_name"
-                name="nick_name"
-                type="text"
-                placeholder="สมชาย"
-                className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="mb-1 block text-sm text-white/90">
-                เบอร์โทรศัพท์
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                inputMode="tel"
-                placeholder="08xxxxxxxx"
-                pattern="^[0-9\s\-+()]{8,20}$"
-                autoComplete="tel"
-                className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3"
-              />
-            </div>
-          </section> */}
-
-          {/* ---------------- ข้อมูลที่จะแสดงในรูปภาพที่แชร์ ---------------- */}
-          
-
-          {/* ---------------- ข้อกำหนด/ความเป็นส่วนตัว + Social ---------------- */}
           <section className="space-y-4 pt-1">
             <label className="flex items-start gap-3 text-sm">
               <input
@@ -210,9 +139,9 @@ export default function RegisterPage() {
                 required
               />
               <span>
-                ยอมรับ{" "}
+                {t.register.agreeTos}{" "}
                 <Link href="/terms" className="underline">
-                  ข้อตกลงในการใช้งาน
+                  {t.register.tosLink}
                 </Link>
               </span>
             </label>
@@ -226,13 +155,13 @@ export default function RegisterPage() {
                 onChange={(e) => setAgreePrivacy(e.target.checked)}
                 className="mt-0.5 h-4 w-4 rounded border-white/30 text-violet-600 focus:ring-violet-500"
               />
-              <span>อนุญาตให้แพลตฟอร์มเก็บข้อมูลการใช้งาน</span>
+              <span>{t.register.agreePrivacy}</span>
             </label>
 
             {/* Divider + Social */}
             <div className="my-2 flex items-center gap-3">
               <div className="h-px flex-1 bg-white/20" />
-              <span className="text-sm text-white/80">หรือ</span>
+              <span className="text-sm text-white/80">{t.common.or}</span>
               <div className="h-px flex-1 bg-white/20" />
             </div>
 
@@ -244,7 +173,6 @@ export default function RegisterPage() {
             <p className="rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-100">{error}</p>
           )}
 
-          {/* แผงล่าง (ปุ่ม submit) */}
           <BottomBar />
         </form>
       </div>
@@ -255,14 +183,15 @@ export default function RegisterPage() {
 function BottomBar() {
   const { pending } = useFormStatus();
   const { showLoading, hideLoading } = useLoading();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (pending) {
-      showLoading("กำลังลงทะเบียน...");
+      showLoading(t.register.submitting);
     } else {
       hideLoading();
     }
-  }, [pending, showLoading, hideLoading]);
+  }, [pending, showLoading, hideLoading, t]);
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
@@ -274,10 +203,10 @@ function BottomBar() {
               disabled={pending}
               className="inline-flex w-full items-center justify-center rounded-xl bg-violet-700 px-4 py-3 text-[15px] font-semibold text-white shadow hover:bg-violet-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {pending ? "กำลังลงทะเบียน…" : "ลงทะเบียน"}
+              {pending ? t.register.submitting : t.register.submit}
             </button>
             <Link href="/login" className="mt-3 block text-center text-sm font-semibold text-slate-800 hover:underline">
-              เข้าสู่ระบบ
+              {t.register.login}
             </Link>
             <div className="mx-auto mt-3 h-1 w-24 rounded-full bg-slate-900/70" />
           </div>

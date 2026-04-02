@@ -10,6 +10,7 @@ import { toPublicUrl } from "@/utils/toPublicUrl";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateShareImage, type ShareSocialItem } from "@/utils/generateShareImage";
 import { useLoading } from "@/components/LoadingOverlay";
+import { useLanguage } from "@/lib/i18n";
 
 type UserProfile = {
   full_name: string | null;
@@ -44,6 +45,7 @@ type Card = {
 export default function ReadingResultPage() {
   const supabase = createClient();
   const { showLoading, hideLoading } = useLoading();
+  const { t } = useLanguage();
   const params = useParams<{ spreadId: string }>();
   const search = useSearchParams();
 
@@ -86,7 +88,7 @@ export default function ReadingResultPage() {
         setError(null);
 
         if (!deckId || pickedIndexes.length === 0) {
-          setError("พารามิเตอร์ไม่ครบถ้วน");
+          setError(t.readingResult.missingParams);
           setLoading(false);
           return;
         }
@@ -111,12 +113,12 @@ export default function ReadingResultPage() {
         if (!mounted) return;
 
         if (deckErr || !deckData) {
-          setError("ไม่พบเด็คนี้");
+          setError(t.readingResult.deckNotFound);
           setLoading(false);
           return;
         }
         if (cardErr || !cardData || cardData.length === 0) {
-          setError("ไม่พบการ์ดในเด็คนี้");
+          setError(t.readingResult.cardsNotFound);
           setLoading(false);
           return;
         }
@@ -126,7 +128,7 @@ export default function ReadingResultPage() {
         setLoading(false);
       } catch {
         if (!mounted) return;
-        setError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+        setError(t.readingResult.loadError);
         setLoading(false);
       }
     })();
@@ -241,7 +243,7 @@ export default function ReadingResultPage() {
     setShowMenu(false);
     try {
       setGeneratingImage(true);
-      showLoading("กำลังสร้างภาพ...");
+      showLoading(t.readingResult.creatingImage);
       const blob = await generateShareImage(buildShareImageOpts());
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -253,7 +255,7 @@ export default function ReadingResultPage() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Error generating image:", err);
-      alert("ไม่สามารถสร้างภาพได้");
+      alert(t.readingResult.cannotCreateImage);
     } finally {
       setGeneratingImage(false);
       hideLoading();
@@ -264,11 +266,11 @@ export default function ReadingResultPage() {
     setShowMenu(false);
     try {
       setGeneratingImage(true);
-      showLoading("กำลังสร้างภาพ...");
+      showLoading(t.readingResult.creatingImage);
       const blob = await generateShareImage(buildShareImageOpts());
       const file = new File([blob], "tarot-share.jpg", { type: "image/jpeg" });
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "ไพ่ของคุณ - TAROT & ORACLE" });
+        await navigator.share({ files: [file], title: t.readingResult.shareTitle });
       } else {
         // fallback: download
         const url = URL.createObjectURL(blob);
@@ -292,7 +294,7 @@ export default function ReadingResultPage() {
     return (
       <main className="relative min-h-screen text-white">
         <TransparentHeader
-          title="ไพ่ของคุณ"
+          title={t.readingResult.yourCards}
           subtitle=""
           routeRules={{
             "/reading/*": {
@@ -324,9 +326,9 @@ export default function ReadingResultPage() {
     return (
       <main className="relative min-h-screen text-white grid place-items-center">
         <div className="text-center">
-          <p className="mb-4">{error ?? "ไม่พบผลลัพธ์"}</p>
+          <p className="mb-4">{error ?? t.readingResult.noResult}</p>
           <Link href={`/reading?deck=${deckId || ""}`} className="rounded-xl bg-white px-4 py-2 font-semibold text-slate-900">
-            กลับไปเลือกสเปรด
+            {t.readingResult.backToSpread}
           </Link>
         </div>
       </main>
@@ -340,7 +342,7 @@ export default function ReadingResultPage() {
       return (
         <main className="relative min-h-screen text-white">
           <TransparentHeader
-            title="ไพ่ของคุณ"
+            title={t.readingResult.yourCards}
             subtitle=""
             routeRules={{
               "/reading/*": {
@@ -353,7 +355,7 @@ export default function ReadingResultPage() {
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white"></div>
-              <p className="mt-4 text-white/70">กำลังเตรียมการ์ด...</p>
+              <p className="mt-4 text-white/70">{t.readingResult.preparingCards}</p>
             </div>
           </div>
         </main>
@@ -363,7 +365,7 @@ export default function ReadingResultPage() {
     return (
       <main className="relative min-h-screen text-white">
         <TransparentHeader
-          title="ไพ่ของคุณ"
+          title={t.readingResult.yourCards}
           subtitle=""
           routeRules={{
             "/reading/*": {
@@ -412,7 +414,7 @@ export default function ReadingResultPage() {
                 />
                 <div className="mt-3 text-center">
                   <div className="text-sm text-white/70">
-                    ไพ่ใบที่ {currentCardIndex + 1}
+                    {t.readingResult.cardNumber} {currentCardIndex + 1}
                   </div>
                   <div className="mt-1 text-lg font-bold text-white">
                     {chosenCards[currentCardIndex].card_name}
@@ -438,7 +440,7 @@ export default function ReadingResultPage() {
                 {/* Skip hint */}
                 <div className="mt-4 text-center">
                   <p className="text-xs text-white/50 animate-pulse">
-                    แตะเพื่อข้ามไปใบถัดไป
+                    {t.readingResult.tapToNext}
                   </p>
                 </div>
               </motion.div>
@@ -498,7 +500,7 @@ export default function ReadingResultPage() {
                 className="h-full w-16 flex-none rounded-lg object-cover"
               />
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-slate-500">ไพ่ตำแหน่งที่ {idx + 1}</div>
+                <div className="text-xs text-slate-500">{t.readingResult.cardPosition} {idx + 1}</div>
                 <div className="truncate text-sm font-semibold">{c.card_name}</div>
                 {c.describe && (
                   <p className="mt-1 line-clamp-2 text-[12px] text-slate-700">{c.describe}</p>
@@ -508,7 +510,7 @@ export default function ReadingResultPage() {
                     href={`/decks/${deck.id}/cards/${c.id}`}
                     className="inline-flex items-center rounded-lg border border-slate-800 px-2 py-1 text-[12px] font-semibold hover:bg-slate-50"
                   >
-                    ดูรายละเอียดการ์ด
+                    {t.readingResult.viewCardDetails}
                     <svg viewBox="0 0 24 24" width="14" height="14" className="ml-1" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="m9 18 6-6-6-6" />
                     </svg>
@@ -524,10 +526,10 @@ export default function ReadingResultPage() {
           <div className="mx-auto max-w-md px-4 pb-6 pt-3 bg-white rounded-t-3xl shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
             <div className="grid grid-cols-2 gap-3">
               <Link href={`/reading?deck=${deck.id}`} className="rounded-lg  bg-white border border-slate-800 px-3 py-3 text-center text-sm font-semibold text-slate-900">
-                สุ่มใหม่
+                {t.readingResult.reshuffleAuto}
               </Link>
               <Link href={`/reading/${spreadId}/manual?deck=${deck.id}`} className="rounded-lg bg-white border border-slate-800 px-3 py-3 text-center text-sm font-semibold text-slate-900">
-                สับเองใหม่
+                {t.readingResult.reshuffleManual}
               </Link>
             </div>
           </div>
@@ -555,7 +557,7 @@ export default function ReadingResultPage() {
                   <polyline points="17 21 17 13 7 13 7 21" />
                   <polyline points="7 3 7 8 15 8" />
                 </svg>
-                บันทึกภาพ
+                {t.readingResult.saveImage}
               </button>
 
               <button
@@ -568,7 +570,7 @@ export default function ReadingResultPage() {
                   <circle cx="18" cy="19" r="3" />
                   <path d="M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5" />
                 </svg>
-                ส่งต่อให้เพื่อน
+                {t.readingResult.shareToFriend}
               </button>
 
             </div>

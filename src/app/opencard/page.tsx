@@ -6,6 +6,7 @@ import TransparentHeader from "@/components/TransparentHeader";
 import { createClient } from "@/utils/supabase/client";
 import { getUserTier, hasPremiumAccess, type UserTier, type ProfilePlan } from "@/lib/user-tier";
 import { useLoading } from "@/components/LoadingOverlay";
+import { useLanguage } from "@/lib/i18n";
 
 type DbDeck = {
   id: number;
@@ -34,6 +35,7 @@ export default function OpenCardPage() {
   const router = useRouter();
   const supabase = createClient();
   const { showLoading, hideLoading } = useLoading();
+  const { t } = useLanguage();
 
   const [tab, setTab] = useState<TabKey>("all");
   const [loading, setLoading] = useState(true);
@@ -111,7 +113,7 @@ export default function OpenCardPage() {
   const toggleFav = useCallback(
     async (deckId: number) => {
       if (!userId) {
-        alert("กรุณาเข้าสู่ระบบก่อนบันทึกเป็นรายการโปรด");
+        alert(t.openCard.loginToFavorite);
         return;
       }
 
@@ -171,20 +173,20 @@ export default function OpenCardPage() {
     async (deckId: number, vipOnly: boolean) => {
       // ยังไม่ล็อกอิน
       if (!userId) {
-        alert("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+        alert(t.openCard.loginRequired);
         return;
       }
 
       // deck VIP แต่ user ไม่มีสิทธิ์ premium → ไม่ต้องยิง API เลย
       if (vipOnly && !hasPremiumAccess(userTier)) {
         alert(userTier === "basic"
-          ? "สิทธิ์ทดลองใช้หมดแล้ว กรุณาสมัคร VIP"
-          : "สำรับนี้สำหรับสมาชิกเท่านั้น");
+          ? t.openCard.trialExpired
+          : t.openCard.membersOnly);
         return;
       }
 
       try {
-        showLoading("กำลังเปิดสำรับ...");
+        showLoading(t.openCard.opening);
         const res = await fetch(`/api/decks/${deckId}/open`, {
           method: "GET",
         });
@@ -202,10 +204,10 @@ export default function OpenCardPage() {
         // "Your plan is inactive or expired." หรือ
         // "Daily limit reached. You used 20 / 20 today."
         const msg = await res.text();
-        alert(msg || "ไม่สามารถเปิดสำรับได้ในขณะนี้");
+        alert(msg || t.openCard.cannotOpen);
       } catch (err) {
         console.error("open deck failed", err);
-        alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        alert(t.openCard.serverError);
       } finally {
         hideLoading();
       }
@@ -216,7 +218,7 @@ export default function OpenCardPage() {
   return (
     <main className="relative min-h-screen">
       <TransparentHeader
-        title="เปิดไพ่"
+        title={t.openCard.title}
         subtitle=""
         routeRules={{
           "/opencard": {
@@ -238,7 +240,7 @@ export default function OpenCardPage() {
 
       <div className="relative -mt-14 mx-auto max-w-md px-4 pb-24 text-white">
         <p className="mt-1 text-center text-sm text-white/85">
-          เลือกสำรับไพ่ที่ต้องการใช้งาน
+          {t.openCard.subtitle}
         </p>
 
         {/* Tabs */}
@@ -250,7 +252,7 @@ export default function OpenCardPage() {
               }`}
               onClick={() => setTab("all")}
             >
-              สำหรับทั้งหมด
+              {t.openCard.all}
               {tab === "all" && (
                 <span className="mt-1 block h-0.5 rounded bg-white" />
               )}
@@ -261,7 +263,7 @@ export default function OpenCardPage() {
               }`}
               onClick={() => setTab("fav")}
             >
-              Favorite
+              {t.openCard.favorite}
               {tab === "fav" && (
                 <span className="mt-1 block h-0.5 rounded bg-white" />
               )}
@@ -301,7 +303,7 @@ export default function OpenCardPage() {
             ))}
             {!listToShow.length && (
               <p className="col-span-2 text-center text-white/80">
-                ไม่มีรายการ
+                {t.openCard.noItems}
               </p>
             )}
           </div>
@@ -333,8 +335,9 @@ function DeckCard({
   // แล้ว backend จะเป็นคนตอบกลับด้วย status 429/403
   const disabled = deck.vipOnly && !hasPremiumAccess(planType);
 
+  const { t } = useLanguage();
   const buttonLabel =
-    deck.vipOnly && !hasPremiumAccess(planType) ? "VIP Only" : "ดูดวง";
+    deck.vipOnly && !hasPremiumAccess(planType) ? t.openCard.vipOnly : t.openCard.readFortune;
 
   return (
     <div className="overflow-hidden rounded-2xl bg-white/95 p-2 text-slate-900 shadow ring-1 ring-black/5 backdrop-blur">
@@ -370,7 +373,7 @@ function DeckCard({
             onClick={onInfo}
             className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
-            ดูข้อมูล
+            {t.openCard.viewInfo}
           </button>
 
           <button

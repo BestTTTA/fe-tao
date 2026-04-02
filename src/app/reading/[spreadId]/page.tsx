@@ -4,6 +4,7 @@
 import { useRef, useState } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
+import { useLanguage } from "@/lib/i18n";
 
 // Helper to get card count from spreadId
 function spreadCountFromId(id?: string): number {
@@ -16,26 +17,23 @@ function spreadCountFromId(id?: string): number {
 export default function ReadingQuestionPage() {
   const router = useRouter();
   const params = useParams<{ spreadId?: string; spredId?: string }>();
-  const spreadId = params.spreadId ?? params.spredId ?? "3-card"; // ✅ กัน undefined
+  const spreadId = params.spreadId ?? params.spredId ?? "3-card";
   const search = useSearchParams();
   const deckId = search.get("deck") ?? "";
   const [question, setQuestion] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // line-height ~24px * 6 lines + padding (24px top+bottom) = ~168px
   const maxH = 168;
+  const { t } = useLanguage();
 
   const cardCount = spreadCountFromId(spreadId);
-
 
   const go = (mode: "auto" | "manual") => {
     const q = encodeURIComponent(question.trim());
     const d = encodeURIComponent(deckId);
 
     if (mode === "auto") {
-      // Auto mode: go to shuffle page, which will auto-pick and navigate to result
       router.push(`/reading/${spreadId}/manual?deck=${d}&q=${q}&auto=1`);
     } else {
-      // Manual mode: go to manual shuffle page
       router.push(`/reading/${spreadId}/${mode}?deck=${d}&q=${q}`);
     }
   };
@@ -43,7 +41,7 @@ export default function ReadingQuestionPage() {
   return (
     <main className="relative min-h-screen text-white flex items-center">
       <TransparentHeader
-        title="เปิดไพ่"
+        title={t.reading.title}
         subtitle=""
         routeRules={{
           "/reading/*": {
@@ -59,14 +57,15 @@ export default function ReadingQuestionPage() {
 
       <div className="mx-auto max-w-md px-4 pt-20 pb-28 w-full flex flex-col items-center text-center gap-4">
         <h2 className="text-2xl font-bold text-white drop-shadow">
-          วางไพ่แบบ {cardCount} ใบ
+          {t.reading.spreadCard} {cardCount} {t.reading.cards}
         </h2>
 
         <div className="w-full text-left">
-          <label className="block text-sm font-semibold text-white/90">คำถามหรือเรื่องที่ต้องการดูดวง</label>
+          <label className="block text-sm font-semibold text-white/90">{t.reading.questionLabel}</label>
           <textarea
             ref={textareaRef}
             value={question}
+            maxLength={100}
             onChange={(e) => {
               setQuestion(e.target.value);
               const el = textareaRef.current;
@@ -75,15 +74,18 @@ export default function ReadingQuestionPage() {
                 el.style.height = `${Math.min(el.scrollHeight, maxH)}px`;
               }
             }}
-            placeholder="เว้นไว้หากไม่ต้องการใส่คำถาม"
+            placeholder={t.reading.questionPlaceholder}
             rows={3}
             style={{ maxHeight: maxH }}
             className="mt-2 w-full rounded-lg border border-white/20 bg-white/95 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/40 resize-none overflow-y-auto"
           />
+          <div className="mt-1 text-right text-xs text-white/60">
+            {question.length}/100
+          </div>
         </div>
 
         <p className="text-sm text-white/80 italic">
-          กรุณาตั้งสมาธิแล้วนึกถึงเรื่องที่ต้องการถาม
+          {t.reading.focusHint}
         </p>
       </div>
 
@@ -94,13 +96,13 @@ export default function ReadingQuestionPage() {
               onClick={() => go("auto")}
               className="rounded-lg border border-slate-800 bg-white px-3 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
             >
-              สุ่มอัตโนมัติ
+              {t.reading.autoShuffle}
             </button>
             <button
               onClick={() => go("manual")}
               className="rounded-lg border border-slate-800 bg-white px-3 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
             >
-              สับไพ่เอง
+              {t.reading.manualShuffle}
             </button>
           </div>
         </div>

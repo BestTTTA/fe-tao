@@ -6,11 +6,13 @@ import { createClient } from "@/utils/supabase/client";
 import TransparentHeader from "@/components/TransparentHeader";
 import AlertModal from "@/components/AlertModal";
 import { useLoading } from "@/components/LoadingOverlay";
+import { useLanguage } from "@/lib/i18n";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
   const supabase = createClient();
   const { showLoading, hideLoading } = useLoading();
+  const { t } = useLanguage();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -34,90 +36,76 @@ export default function ChangePasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
-      showAlert("ข้อมูลไม่ครบ", "กรุณากรอกข้อมูลให้ครบทุกช่อง");
+      showAlert(t.changePassword.incomplete, t.changePassword.incompleteSub);
       return;
     }
 
     if (newPassword.length < 8) {
-      showAlert("รหัสผ่านสั้นเกินไป", "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร");
+      showAlert(t.changePassword.tooShort, t.changePassword.tooShortSub);
       return;
     }
 
-    // Check password strength
     const hasUpperCase = /[A-Z]/.test(newPassword);
     const hasLowerCase = /[a-z]/.test(newPassword);
     const hasNumbers = /\d/.test(newPassword);
 
     if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
-      showAlert(
-        "รหัสผ่านไม่ปลอดภัย",
-        "รหัสผ่านต้องประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข"
-      );
+      showAlert(t.changePassword.weak, t.changePassword.weakSub);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showAlert("รหัสผ่านไม่ตรงกัน", "กรุณากรอกยืนยันรหัสผ่านให้ตรงกัน");
+      showAlert(t.changePassword.mismatch, t.changePassword.mismatchSub);
       return;
     }
 
     try {
       setLoading(true);
-      showLoading("กำลังเปลี่ยนรหัสผ่าน...");
+      showLoading(t.changePassword.submitting);
 
-      // Get current user
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (!user || !user.email) {
-        showAlert("ไม่พบข้อมูลผู้ใช้", "กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+        showAlert(t.changePassword.noUser, t.changePassword.noUserSub);
         return;
       }
 
-      // Verify current password by trying to sign in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: currentPassword,
       });
 
       if (signInError) {
-        showAlert("รหัสผ่านไม่ถูกต้อง", "รหัสผ่านปัจจุบันไม่ถูกต้อง");
+        showAlert(t.changePassword.wrongCurrent, t.changePassword.wrongCurrentSub);
         return;
       }
 
-      // Update to new password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
       if (updateError) {
-        // Handle weak password error
         if (
           updateError.message?.toLowerCase().includes("weak") ||
           updateError.message?.toLowerCase().includes("easy to guess")
         ) {
-          showAlert(
-            "รหัสผ่านไม่ปลอดภัย",
-            "รหัสผ่านนี้ถูกใช้บ่อยเกินไป กรุณาเลือกรหัสผ่านที่ซับซ้อนกว่านี้"
-          );
+          showAlert(t.changePassword.weak, t.changePassword.tooCommon);
           return;
         }
         throw updateError;
       }
 
-      // Success
-      showAlert("สำเร็จ", "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว", "success");
+      showAlert(t.changePassword.success, t.changePassword.successSub, "success");
 
-      // Clear form
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
       console.error("Error changing password:", error);
-      showAlert("เกิดข้อผิดพลาด", "ไม่สามารถเปลี่ยนรหัสผ่านได้ กรุณาลองใหม่อีกครั้ง");
+      showAlert(t.common.error, t.changePassword.errorSub);
     } finally {
       setLoading(false);
       hideLoading();
@@ -143,17 +131,16 @@ export default function ChangePasswordPage() {
       <section className="relative h-[210px] w-full overflow-hidden" />
 
       <div className="relative -mt-16 mx-auto max-w-md px-4 pb-24 text-white">
-        <h1 className="mb-3 text-2xl font-extrabold">เปลี่ยนรหัสผ่าน</h1>
+        <h1 className="mb-3 text-2xl font-extrabold">{t.changePassword.title}</h1>
 
         <div className="overflow-hidden rounded-3xl bg-white/95 p-5 text-slate-900 shadow-lg ring-1 ring-black/5 backdrop-blur">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Current Password */}
             <div>
               <label
                 htmlFor="currentPassword"
                 className="block text-sm font-medium text-slate-700"
               >
-                รหัสผ่านปัจจุบัน
+                {t.changePassword.currentPassword}
               </label>
               <input
                 id="currentPassword"
@@ -161,18 +148,17 @@ export default function ChangePasswordPage() {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 className="mt-1 block w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                placeholder="กรอกรหัสผ่านปัจจุบัน"
+                placeholder={t.changePassword.currentPasswordPlaceholder}
                 disabled={loading}
               />
             </div>
 
-            {/* New Password */}
             <div>
               <label
                 htmlFor="newPassword"
                 className="block text-sm font-medium text-slate-700"
               >
-                รหัสผ่านใหม่
+                {t.changePassword.newPassword}
               </label>
               <input
                 id="newPassword"
@@ -180,21 +166,20 @@ export default function ChangePasswordPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="mt-1 block w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                placeholder="กรอกรหัสผ่านใหม่"
+                placeholder={t.changePassword.newPasswordPlaceholder}
                 disabled={loading}
               />
               <p className="mt-1 text-xs text-slate-500">
-                ต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข
+                {t.changePassword.newPasswordHint}
               </p>
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-slate-700"
               >
-                ยืนยันรหัสผ่านใหม่
+                {t.changePassword.confirmPassword}
               </label>
               <input
                 id="confirmPassword"
@@ -202,29 +187,26 @@ export default function ChangePasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="mt-1 block w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+                placeholder={t.changePassword.confirmPasswordPlaceholder}
                 disabled={loading}
               />
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
               className="w-full rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white shadow hover:bg-violet-800 disabled:opacity-50"
             >
-              {loading ? "กำลังดำเนินการ..." : "เปลี่ยนรหัสผ่าน"}
+              {loading ? t.changePassword.submitting : t.changePassword.submit}
             </button>
           </form>
         </div>
       </div>
 
-      {/* Alert Modal */}
       <AlertModal
         open={alert.open}
         onClose={() => {
           setAlert({ ...alert, open: false });
-          // If success, go back to menu
           if (alert.type === "success") {
             router.push("/menu");
           }

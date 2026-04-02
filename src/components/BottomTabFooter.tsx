@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n";
 
 export type FooterProps = {
   active?: "home" | "cards" | "account";
@@ -23,9 +24,11 @@ export default function BottomTabFooter({
   onCards,
   onAccount,
   className = "",
-  labels = { home: "หน้าแรก", cards: "เปิดไพ่", account: "โปรไฟล์" },
+  labels: labelsProp,
 }: FooterProps) {
   const router = useRouter();
+  const { t } = useLanguage();
+  const labels = labelsProp ?? { home: t.footer.home, cards: t.footer.openCard, account: t.footer.profile };
 
   const goHome = () => {
     if (homePath) return router.push(homePath);

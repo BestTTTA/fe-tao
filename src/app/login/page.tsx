@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import TransparentHeader from '@/components/TransparentHeader';
-import { login, signInWithGoogle } from '@/lib/auth-actions'; // ✅ นำเข้า action Google
+import { login, signInWithGoogle } from '@/lib/auth-actions';
 import { useFormStatus } from 'react-dom';
 import SocialLogin from '@/components/SocialLogin';
 import { useLoading } from '@/components/LoadingOverlay';
+import { useLanguage } from '@/lib/i18n';
 
 export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <main className="relative min-h-screen">
@@ -28,20 +30,20 @@ export default function LoginPage() {
       />
 
       <div className="mx-auto max-w-md px-4 pt-24 pb-[160px] text-white">
-        <h1 className="text-2xl font-extrabold">เข้าสู่ระบบ</h1>
+        <h1 className="text-2xl font-extrabold">{t.login.title}</h1>
 
         <form action={login} className="mt-6 space-y-4">
           {/* Email */}
           <div>
             <label htmlFor="email" className="mb-1 block text-sm text-white/90">
-              อีเมล
+              {t.login.email}
             </label>
             <input
               id="email"
               name="email"
               type="email"
               inputMode="email"
-              placeholder="กรุณาระบุอีเมล"
+              placeholder={t.login.emailPlaceholder}
               autoComplete="email"
               required
               className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3"
@@ -52,10 +54,10 @@ export default function LoginPage() {
           <div>
             <div className="mb-1 flex items-center justify-between">
               <label htmlFor="password" className="block text-sm text-white/90">
-                Password
+                {t.login.password}
               </label>
               <Link href="/forgot" className="text-sm font-semibold text-white hover:underline">
-                รีเซ็ตรหัสผ่านใหม่
+                {t.login.resetPassword}
               </Link>
             </div>
 
@@ -64,14 +66,14 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 type={showPass ? 'text' : 'password'}
-                placeholder="กรุณาระบุรหัสผ่าน"
+                placeholder={t.login.passwordPlaceholder}
                 autoComplete="current-password"
                 required
                 className="w-full rounded-xl border border-white/20 bg-white text-slate-900 placeholder-slate-400 shadow focus:outline-none focus:ring-2 focus:ring-violet-500/80 px-3 py-3 pr-10"
               />
               <button
                 type="button"
-                aria-label={showPass ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                aria-label={showPass ? t.login.hidePassword : t.login.showPassword}
                 onClick={() => setShowPass((v) => !v)}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-600 hover:bg-slate-100"
               >
@@ -83,14 +85,14 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="my-4 flex items-center gap-3">
             <div className="h-px flex-1 bg-white/20" />
-            <span className="text-sm text-white/80">หรือ</span>
+            <span className="text-sm text-white/80">{t.common.or}</span>
             <div className="h-px flex-1 bg-white/20" />
           </div>
 
-          {/* Social login (คอมโพเนนต์ใหม่) */}
+          {/* Social login */}
           <SocialLogin/>
 
-          {/* ฟอร์มซ่อน เรียก server action สำหรับ Google */}
+          {/* Google OAuth form */}
           <form action={signInWithGoogle} id="google-oauth-form" />
 
           {/* Bottom submit bar */}
@@ -104,14 +106,15 @@ export default function LoginPage() {
 function BottomBar() {
   const { pending } = useFormStatus();
   const { showLoading, hideLoading } = useLoading();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (pending) {
-      showLoading("กำลังล็อกอิน...");
+      showLoading(t.login.submitting);
     } else {
       hideLoading();
     }
-  }, [pending, showLoading, hideLoading]);
+  }, [pending, showLoading, hideLoading, t]);
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 ">
@@ -123,14 +126,14 @@ function BottomBar() {
               disabled={pending}
               className="inline-flex w-full items-center justify-center rounded-xl bg-violet-700 px-4 py-3 text-[15px] font-semibold text-white shadow hover:bg-violet-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {pending ? 'กำลังล็อกอิน…' : 'เข้าสู่ระบบ'}
+              {pending ? t.login.submitting : t.login.submit}
             </button>
 
             <Link
               href="/register"
               className="mt-3 block text-center text-sm font-semibold text-slate-800 hover:underline"
             >
-              ลงทะเบียน
+              {t.login.register}
             </Link>
 
             <div className="mx-auto mt-3 h-1 w-24 rounded-full bg-slate-900/70" />

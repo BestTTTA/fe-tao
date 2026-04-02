@@ -4,8 +4,10 @@ import { useState } from "react";
 import TransparentHeader from "@/components/TransparentHeader";
 import { updatePassword } from "@/lib/auth-actions";
 import { useFormStatus } from "react-dom";
+import { useLanguage } from "@/lib/i18n";
 
 export default function ResetPasswordPage() {
+  const { t } = useLanguage();
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
@@ -17,7 +19,7 @@ export default function ResetPasswordPage() {
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-slate-900 via-violet-900/40 to-slate-950 text-white">
       <TransparentHeader
-        title="ตั้งรหัสผ่านใหม่"
+        title={t.resetPassword.title}
         subtitle=""
         routeRules={{
           "/reset-password": {
@@ -35,25 +37,25 @@ export default function ResetPasswordPage() {
       <div className="mx-auto max-w-md px-4 pt-28 pb-24">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur">
           <h1 className="text-center text-2xl font-extrabold tracking-tight">
-            ตั้งรหัสผ่านใหม่
+            {t.resetPassword.title}
           </h1>
 
           <p className="mt-2 text-center text-white/80">
-            กรุณาระบุรหัสผ่านใหม่ของคุณ (ขั้นต่ำ 8 ตัวอักษร)
+            {t.resetPassword.description}
           </p>
 
           <form action={updatePassword} className="mt-6 space-y-4">
             {/* New Password */}
             <div>
               <label htmlFor="password" className="mb-1 block text-sm text-white/90">
-                รหัสผ่านใหม่
+                {t.changePassword.newPassword}
               </label>
               <div className="relative">
                 <input
                   id="password"
                   name="password"
                   type={showPass ? "text" : "password"}
-                  placeholder="ระบุรหัสผ่านใหม่"
+                  placeholder={t.resetPassword.newPassword}
                   autoComplete="new-password"
                   required
                   minLength={8}
@@ -63,7 +65,7 @@ export default function ResetPasswordPage() {
                 />
                 <button
                   type="button"
-                  aria-label={showPass ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                  aria-label={showPass ? t.login.hidePassword : t.login.showPassword}
                   onClick={() => setShowPass((v) => !v)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-600 hover:bg-slate-100"
                 >
@@ -72,7 +74,7 @@ export default function ResetPasswordPage() {
               </div>
               {password && !passwordValid && (
                 <p className="mt-1 text-xs text-amber-300">
-                  รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร
+                  {t.resetPassword.minLength}
                 </p>
               )}
             </div>
@@ -80,14 +82,14 @@ export default function ResetPasswordPage() {
             {/* Confirm Password */}
             <div>
               <label htmlFor="confirm" className="mb-1 block text-sm text-white/90">
-                ยืนยันรหัสผ่านใหม่
+                {t.resetPassword.confirmPassword}
               </label>
               <div className="relative">
                 <input
                   id="confirm"
                   name="confirm"
                   type={showConfirm ? "text" : "password"}
-                  placeholder="ระบุรหัสผ่านอีกครั้ง"
+                  placeholder={t.resetPassword.confirmPassword}
                   autoComplete="new-password"
                   required
                   value={confirm}
@@ -96,7 +98,7 @@ export default function ResetPasswordPage() {
                 />
                 <button
                   type="button"
-                  aria-label={showConfirm ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                  aria-label={showConfirm ? t.login.hidePassword : t.login.showPassword}
                   onClick={() => setShowConfirm((v) => !v)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-600 hover:bg-slate-100"
                 >
@@ -105,7 +107,7 @@ export default function ResetPasswordPage() {
               </div>
               {confirm && !passwordsMatch && (
                 <p className="mt-1 text-xs text-red-300">
-                  รหัสผ่านไม่ตรงกัน
+                  {t.resetPassword.mismatch}
                 </p>
               )}
             </div>
@@ -125,13 +127,14 @@ export default function ResetPasswordPage() {
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
+  const { t } = useLanguage();
   return (
     <button
       type="submit"
       disabled={disabled || pending}
       className="inline-flex w-full items-center justify-center rounded-xl bg-violet-700 px-4 py-3 text-[15px] font-semibold text-white shadow hover:bg-violet-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-60 disabled:cursor-not-allowed"
     >
-      {pending ? "กำลังอัพเดทรหัสผ่าน..." : "ตั้งรหัสผ่านใหม่"}
+      {pending ? t.resetPassword.submitting : t.resetPassword.submit}
     </button>
   );
 }

@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import StatusModal from "@/components/StatusModal";
 import { useLoading } from "@/components/LoadingOverlay";
 import { getUserTier, type ProfilePlan } from "@/lib/user-tier";
+import { useLanguage } from "@/lib/i18n";
 
 type PlanKey = "monthly" | "yearly";
 type PlanType = "FREE" | "MONTH" | "YEAR";
@@ -20,6 +21,7 @@ interface PriceInfo {
 export default function VipPackagesPage() {
   const supabase = createClient();
   const { showLoading, hideLoading } = useLoading();
+  const { t } = useLanguage();
   const [prices, setPrices] = useState<PriceInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -125,7 +127,7 @@ export default function VipPackagesPage() {
 
   const onPay = async (k: PlanKey) => {
     const price = prices.find((p) => p.key === k);
-    if (!price) return alert("ไม่พบราคา");
+    if (!price) return alert(t.packages.priceNotFound);
 
     setLoading(true);
     showLoading("กำลังเชื่อมต่อ...");
@@ -141,7 +143,7 @@ export default function VipPackagesPage() {
       const data = await res.json();
       if (data.url) window.location.href = data.url;
     } catch {
-      alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+      alert(t.common.tryAgain);
     } finally {
       setLoading(false);
       hideLoading();
@@ -163,7 +165,7 @@ export default function VipPackagesPage() {
   return (
     <main className="relative min-h-screen">
       <TransparentHeader
-        title="สมัคร VIP"
+        title={t.packages.title}
         subtitle=""
         routeRules={{
           "/packages": {
@@ -192,10 +194,10 @@ export default function VipPackagesPage() {
               </div>
               <div>
                 <div className="text-[15px] font-bold text-[#361B62]">
-                  คุณกำลังใช้ VIP ทดลอง
+                  {t.packages.trialBanner}
                 </div>
                 <div className="text-[13px] text-slate-400">
-                  เหลืออีก {daysLeft} วัน
+                  {t.packages.daysLeft} {daysLeft} {t.packages.days}
                 </div>
               </div>
             </div>
@@ -209,12 +211,12 @@ export default function VipPackagesPage() {
               </div>
               <div>
                 <div className="text-[15px] font-bold text-amber-900">
-                  คุณเป็นสมาชิก{" "}
-                  {currentPlan === "YEAR" ? "VIP รายปี" : "VIP รายเดือน"}
+                  {t.packages.vipMember}{" "}
+                  {currentPlan === "YEAR" ? t.packages.vipYearly : t.packages.vipMonthly}
                 </div>
                 {planExpire && (
                   <div className="text-[13px] text-amber-700">
-                    ถึงวันที่{" "}
+                    {t.packages.until}{" "}
                     {new Date(planExpire).toLocaleDateString("th-TH")}
                   </div>
                 )}
@@ -224,33 +226,33 @@ export default function VipPackagesPage() {
 
           {/* Hero */}
           <h1 className="text-[22px] font-extrabold leading-tight text-slate-900">
-            เปลี่ยนมือถือเป็น &ldquo;โต๊ะดูดวง&rdquo; ส่วนตัวระดับ VIP
+            {t.packages.heroTitle}
           </h1>
           <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
-            ปลดล็อกไพ่ลิขสิทธิ์มากกว่า 20 สำรับ เปิดได้ไม่จำกัด 24 ชม.
+            {t.packages.heroDesc}
           </p>
 
           {/* Benefits */}
           <div className="mt-5">
             <h2 className="text-base font-bold text-slate-900">
-              สิทธิพิเศษ VIP ที่คุณจะได้รับ:
+              {t.packages.benefitsTitle}
             </h2>
             <ul className="mt-3 space-y-3">
               <BenefitItem
-                title="เข้าถึงทุกสำรับ:"
-                desc="ไพ่แท้กว่า 20 ชุด (รวมชุดดัง) ในแอปเดียว"
+                title={t.packages.benefit1Title}
+                desc={t.packages.benefit1Desc}
               />
               <BenefitItem
-                title="ดูได้ไม่จำกัด:"
-                desc="เปิดไพ่กี่ครั้งก็ได้ต่อวัน ไม่มีการจำกัด"
+                title={t.packages.benefit2Title}
+                desc={t.packages.benefit2Desc}
               />
               <BenefitItem
-                title="บันทึก & แชร์:"
-                desc="เซฟภาพผลทำนายสวยๆ ส่งต่อได้ทันที"
+                title={t.packages.benefit3Title}
+                desc={t.packages.benefit3Desc}
               />
               <BenefitItem
-                title="ลองใช้ฟรี!:"
-                desc="30 วันแรก สำหรับสมาชิกใหม่"
+                title={t.packages.benefit4Title}
+                desc={t.packages.benefit4Desc}
               />
             </ul>
           </div>
@@ -259,10 +261,10 @@ export default function VipPackagesPage() {
           <div className="mt-6 space-y-4">
           {/* Monthly */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-lg">
-            <h3 className="text-lg font-extrabold">VIP แบบรายเดือน</h3>
+            <h3 className="text-lg font-extrabold">{t.packages.monthlyTitle}</h3>
             <ul className="mt-3 space-y-2">
-              <FeatureItem text="68.- (ปกติ 98.-)" />
-              <FeatureItem text="เฉลี่ยวันละไม่ถึง 3 บาท" />
+              <FeatureItem text={t.packages.monthlyPrice} />
+              <FeatureItem text={t.packages.monthlyAvg} />
             </ul>
             {currentPlan === "MONTH" ? (
               <CurrentBadge expireDate={planExpire} />
@@ -278,7 +280,7 @@ export default function VipPackagesPage() {
                 }`}
               >
                 {loading
-                  ? "กำลังเชื่อมต่อ..."
+                  ? t.packages.connecting
                   : monthlyPrice
                   ? formatPrice(monthlyPrice.amount, monthlyPrice.currency)
                   : "..."}
@@ -290,14 +292,14 @@ export default function VipPackagesPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-lg">
             <div className="mb-1 flex items-center gap-2">
               <span className="rounded-md bg-amber-400 px-2.5 py-1 text-[11px] font-extrabold text-amber-900 shadow-sm">
-                แนะนำ
+                {t.common.recommended}
               </span>
-              <h3 className="text-lg font-extrabold">VIP แบบรายปี</h3>
+              <h3 className="text-lg font-extrabold">{t.packages.yearlyTitle}</h3>
             </div>
             <ul className="mt-3 space-y-2">
-              <FeatureItem text="680.- (ปกติ 980.-)" />
-              <FeatureItem text="เฉลี่ยวันละไม่ถึง 2 บาท" />
-              <FeatureItem text="รับฟรี! กล่องสุ่มมูลค่า 500.- (ส่งตรงถึงบ้าน) *มีจำนวนจำกัด" />
+              <FeatureItem text={t.packages.yearlyPrice} />
+              <FeatureItem text={t.packages.yearlyAvg} />
+              <FeatureItem text={t.packages.yearlyBonus} />
             </ul>
             {currentPlan === "YEAR" ? (
               <CurrentBadge expireDate={planExpire} />
@@ -313,7 +315,7 @@ export default function VipPackagesPage() {
                 }`}
               >
                 {loading
-                  ? "กำลังเชื่อมต่อ..."
+                  ? t.packages.connecting
                   : yearlyPrice
                   ? formatPrice(yearlyPrice.amount, yearlyPrice.currency)
                   : "..."}
@@ -328,7 +330,7 @@ export default function VipPackagesPage() {
               type="button"
               className="text-sm font-medium text-slate-400 underline underline-offset-4 hover:text-slate-600"
             >
-              กู้คืนการซื้อ
+              {t.packages.restorePurchase}
             </button>
           </div>
         </div>
@@ -342,7 +344,7 @@ export default function VipPackagesPage() {
 function BenefitItem({ title, desc }: { title: string; desc: string }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="mt-0.5 grid h-6 w-6 flex-none place-items-center rounded-full bg-emerald-500 shadow-sm">
+      <span className="mt-0.5 grid h-6 w-6 flex-none place-items-center rounded-full bg-[#361B62] shadow-sm">
         <CheckIconWhite size={14} />
       </span>
       <span className="text-[15px] leading-snug text-slate-700">

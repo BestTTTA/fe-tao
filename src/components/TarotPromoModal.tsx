@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getUserTier, hasPremiumAccess, type ProfilePlan } from "@/lib/user-tier";
+import { useLanguage } from "@/lib/i18n";
 
 export type TarotPromoModalProps = {
   open?: boolean;
@@ -28,6 +29,7 @@ export default function TarotPromoModal({
 }: TarotPromoModalProps) {
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useLanguage();
 
   const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
   const open = controlledOpen ?? uncontrolledOpen;
@@ -139,7 +141,7 @@ export default function TarotPromoModal({
             aria-label="ปิด"
             className="z-50 inline-flex w-full items-center justify-end p-2 text-black"
           >
-            x ปิด
+            x {t.common.close}
           </button>
 
           <button onClick={handleCta} className="block w-full">
@@ -165,13 +167,13 @@ export default function TarotPromoModal({
                 onClick={handleCta}
                 className="w-full rounded-xl bg-botton-main px-2 py-2 text-[15px] font-semibold text-white"
               >
-                ดูรายละเอียด
+                {t.promo.viewDetails}
               </button>
               <button
                 onClick={hideForever}
                 className="mx-auto mb-3 block text-center text-[13px] font-semibold text-slate-900 underline underline-offset-4"
               >
-                ไม่แสดงหน้านี้อีก
+                {t.promo.dontShowAgain}
               </button>
             </div>
           )}

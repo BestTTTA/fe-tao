@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useLanguage } from '@/lib/i18n'
 
 export default function ErrorPage() {
   return (
@@ -25,10 +26,11 @@ export default function ErrorPage() {
 
 function ErrorContent() {
   const sp = useSearchParams()
+  const { t } = useLanguage()
   const code = sp.get('code') || ''
   const message = sp.get('message') || ''
 
-  const display = message || 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
+  const display = message || t.errorPage.description
 
   const isInvalidCred =
     code === 'auth_invalid_credentials' || code === 'auth_user_not_found'
@@ -45,7 +47,7 @@ function ErrorContent() {
             <ErrorIcon />
           </div>
           <h1 className="text-center text-2xl font-extrabold tracking-tight">
-            เกิดข้อผิดพลาด
+            {t.errorPage.title}
           </h1>
 
           <p className="mt-2 text-center text-white/80">{display}</p>
@@ -55,7 +57,7 @@ function ErrorContent() {
               href="/"
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-[15px] font-semibold text-white shadow hover:bg-violet-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
             >
-              <HomeIcon /> กลับหน้าแรก
+              <HomeIcon /> {t.errorPage.backHome}
             </Link>
 
             {isInvalidCred && (
@@ -63,14 +65,14 @@ function ErrorContent() {
                 href="/register"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-[15px] font-semibold text-white ring-1 ring-white/20 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               >
-                ไปที่หน้า Register
+                {t.errorPage.goRegister}
               </Link>
             )}
           </div>
 
           {code && (
             <p className="mt-4 text-center text-xs text-white/50">
-              รหัสข้อผิดพลาด: <code>{code}</code>
+              {t.errorPage.errorCode} <code>{code}</code>
             </p>
           )}
         </div>

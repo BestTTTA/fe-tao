@@ -9,29 +9,41 @@ import LanguageModal from "@/components/LanguageModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
 import { createClient } from "@/utils/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLoading } from "@/components/LoadingOverlay";
+import { useLanguage } from "@/lib/i18n";
 
 export default function MenuPage() {
   const router = useRouter();
   const supabase = createClient();
   const { showLoading, hideLoading } = useLoading();
-  const [language, setLanguage] = useState("ไทย");
+  const { t, locale } = useLanguage();
   const [openLang, setOpenLang] = useState(false);
   const [openLogoutConfirm, setOpenLogoutConfirm] = useState(false);
   const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
   const [openDeleteSuccess, setOpenDeleteSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isSocialLogin, setIsSocialLogin] = useState(false);
+
+  useEffect(() => {
+    async function checkProvider() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const provider = user.app_metadata?.provider;
+      setIsSocialLogin(provider !== "email" && provider !== undefined);
+    }
+    checkProvider();
+  }, [supabase]);
 
   const handleDeleteAccount = async () => {
     try {
       setSubmitting(true);
-      showLoading("กำลังดำเนินการ...");
+      showLoading(t.common.processing);
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert("กรุณาเข้าสู่ระบบก่อน");
+        alert(t.common.loginFirst);
         return;
       }
 
@@ -60,7 +72,7 @@ export default function MenuPage() {
       setOpenDeleteSuccess(true);
     } catch (error) {
       console.error("Error submitting deletion request:", error);
-      alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+      alert(t.common.tryAgain);
     } finally {
       setSubmitting(false);
       hideLoading();
@@ -90,59 +102,62 @@ export default function MenuPage() {
 
       <div className="relative -mt-16 mx-auto max-w-md px-4 pb-[120px] space-y-5">
         {/* การใช้งานทั่วไป */}
-        <SectionLabel>การใช้งานทั่วไป</SectionLabel>
+        <SectionLabel>{t.menu.general}</SectionLabel>
         <Card>
           <MenuItem
             icon={<UserIcon />}
-            title="ข้อมูลส่วนตัว"
+            title={t.menu.personalInfo}
             onClick={() => router.push("/menu/profile")}
           />
           <Divider />
           <MenuItem
             icon={<LangIcon />}
-            title="ภาษาของระบบ"
-            value={language}
-            onClick={() => setOpenLang(true)} // 👈 เปิด modal
+            title={t.menu.systemLanguage}
+            value={locale === "th" ? "ไทย" : "English"}
+            onClick={() => setOpenLang(true)}
           />
-          <Divider />
-          <MenuItem
-            icon={<LockIcon />}
-            title="รหัสผ่าน"
-            value="แก้ไข"
-            onClick={() => router.push("/settings/password")}
-          />
+          {!isSocialLogin && (
+            <>
+              <Divider />
+              <MenuItem
+                icon={<LockIcon />}
+                title={t.menu.password}
+                value={t.common.edit}
+                onClick={() => router.push("/settings/password")}
+              />
+            </>
+          )}
         </Card>
 
-        {/* เกี่ยวกับ Tarot & Oracle */}
-        <SectionLabel>เกี่ยวกับ Tarot & Oracle</SectionLabel>
+        <SectionLabel>{t.menu.aboutSection}</SectionLabel>
         <Card>
           <MenuItem
             icon={<InfoIcon />}
-            title="เกี่ยวกับเรา"
+            title={t.menu.aboutUs}
             onClick={() => router.push("/menu/about")}
           />
           <Divider />
           <MenuItem
             icon={<DocIcon />}
-            title="ข้อตกลงในการใช้งาน"
+            title={t.menu.tos}
             onClick={() => router.push("/menu/tnc")}
           />
           <Divider />
           <MenuItem
             icon={<ShieldIcon />}
-            title="นโยบายความเป็นส่วนตัว"
+            title={t.menu.privacy}
             onClick={() => router.push("/menu/policy")}
           />
           <Divider />
           <MenuItem
             icon={<MailIcon />}
-            title="ติดต่อเรา"
+            title={t.menu.contactUs}
             onClick={() => router.push("/menu/contact")}
           />
           <Divider />
           <MenuItem
             icon={<TrashIcon />}
-            title="คำขอลบบัญชี"
+            title={t.menu.deleteAccount}
             onClick={() => setOpenDeleteConfirm(true)}
           />
         </Card>
@@ -161,7 +176,7 @@ export default function MenuPage() {
             width={24}
             height={24}
           />
-          ออกจากระบบ
+          {t.menu.logout}
         </button>
       </div>
 
@@ -170,16 +185,14 @@ export default function MenuPage() {
         open={openLogoutConfirm}
         onClose={() => setOpenLogoutConfirm(false)}
         onConfirm={signout}
-        body="ต้องการออกจากระบบใช่หรือไม่?"
-        cancelText="ยกเลิก"
-        confirmText="ออกจากระบบ"
+        body={t.menu.logoutConfirm}
+        cancelText={t.common.cancel}
+        confirmText={t.menu.logout}
       />
 
       {/* Language Modal */}
       <LanguageModal
         open={openLang}
-        selected={language}
-        onSelect={(lang) => setLanguage(lang)}
         onClose={() => setOpenLang(false)}
       />
 
@@ -188,9 +201,9 @@ export default function MenuPage() {
         open={openDeleteConfirm}
         onClose={() => setOpenDeleteConfirm(false)}
         onConfirm={handleDeleteAccount}
-        body="กรุณายืนยันการลบบัญชี หากท่านยืนยันลบบัญชีแล้ว จะไม่สามารถกู้คืนได้"
-        cancelText="ยกเลิก"
-        confirmText={submitting ? "กำลังส่ง..." : "ยืนยัน"}
+        body={t.menu.deleteConfirm}
+        cancelText={t.common.cancel}
+        confirmText={submitting ? t.menu.sendingRequest : t.common.confirm}
       />
 
       {/* Delete Account Success Modal */}
@@ -198,7 +211,7 @@ export default function MenuPage() {
         open={openDeleteSuccess}
         onClose={() => setOpenDeleteSuccess(false)}
         title=""
-        body="คุณได้ยืนยันการลบบัญชีแล้ว บัญชีจะถูกลบภายใน 7 วัน"
+        body={t.menu.deleteSuccess}
         type="warning"
       />
     </main>

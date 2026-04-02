@@ -359,5 +359,11 @@ const th = {
   },
 } as const;
 
-export type Dictionary = typeof th;
+type DeepString<T> = {
+  [K in keyof T]: T[K] extends object ? DeepString<T[K]> : string;
+};
+
+// 👇 เปลี่ยนตรงนี้
+export type Dictionary = DeepString<typeof th>;
+
 export default th;

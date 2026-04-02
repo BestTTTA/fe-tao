@@ -89,7 +89,6 @@ export default function TermsAcceptPage() {
               >
                 {loading ? "กำลังดำเนินการ..." : "ยอมรับข้อตกลง"}
               </button>
-              <div className="mx-auto mt-3 h-1 w-24 rounded-full bg-slate-900/70" />
             </div>
           </div>
         </div>

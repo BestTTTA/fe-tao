@@ -208,7 +208,6 @@ function BottomBar() {
             <Link href="/login" className="mt-3 block text-center text-sm font-semibold text-slate-800 hover:underline">
               {t.register.login}
             </Link>
-            <div className="mx-auto mt-3 h-1 w-24 rounded-full bg-slate-900/70" />
           </div>
         </div>
       </div>

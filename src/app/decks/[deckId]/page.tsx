@@ -146,7 +146,7 @@ export default async function DeckDetailPage({
                   className="h-20 w-14 flex-none rounded-[10px]"
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] text-black">ใบที่ {i + 1}</div>
+                  <div className="text-[13px] text-black">ไพ่ตำแหน่งที่ {i + 1}</div>
                   <div className="truncate text-sm font-semibold text-black">
                     {c.card_name}
                   </div>

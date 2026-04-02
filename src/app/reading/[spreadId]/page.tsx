@@ -1,7 +1,7 @@
 // app/reading/[spreadId]/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 
@@ -20,6 +20,9 @@ export default function ReadingQuestionPage() {
   const search = useSearchParams();
   const deckId = search.get("deck") ?? "";
   const [question, setQuestion] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // line-height ~24px * 6 lines + padding (24px top+bottom) = ~168px
+  const maxH = 168;
 
   const cardCount = spreadCountFromId(spreadId);
 
@@ -62,11 +65,20 @@ export default function ReadingQuestionPage() {
         <div className="w-full text-left">
           <label className="block text-sm font-semibold text-white/90">คำถามหรือเรื่องที่ต้องการดูดวง</label>
           <textarea
+            ref={textareaRef}
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={(e) => {
+              setQuestion(e.target.value);
+              const el = textareaRef.current;
+              if (el) {
+                el.style.height = "auto";
+                el.style.height = `${Math.min(el.scrollHeight, maxH)}px`;
+              }
+            }}
             placeholder="เว้นไว้หากไม่ต้องการใส่คำถาม"
             rows={3}
-            className="mt-2 w-full rounded-lg border border-white/20 bg-white/95 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/40 resize-none"
+            style={{ maxHeight: maxH }}
+            className="mt-2 w-full rounded-lg border border-white/20 bg-white/95 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/40 resize-none overflow-y-auto"
           />
         </div>
 

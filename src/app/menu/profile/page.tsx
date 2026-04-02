@@ -12,6 +12,7 @@ import {
   isValidImageType,
   isValidFileSize,
 } from "@/utils/imageCompression";
+import { useLoading } from "@/components/LoadingOverlay";
 
 type UserProfile = {
   id: string;
@@ -30,6 +31,7 @@ type UserProfile = {
 export default function AccountProfilePage() {
   const supabase = createClient();
   const router = useRouter();
+  const { showLoading, hideLoading } = useLoading();
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,6 +105,7 @@ export default function AccountProfilePage() {
     if (!user) return;
     setCropSrc(null);
     setUploading(true);
+    showLoading("กำลังอัปโหลดรูป...");
     try {
       const compressedBlob = await compressImage(new File([croppedBlob], "avatar.webp", { type: "image/webp" }));
       const filePath = `user-profile/${user.id}.webp`;
@@ -129,6 +132,7 @@ export default function AccountProfilePage() {
       showAlert("เกิดข้อผิดพลาด", "เกิดข้อผิดพลาดในการอัปโหลดรูป");
     } finally {
       setUploading(false);
+      hideLoading();
     }
   };
 
@@ -296,7 +300,7 @@ function PlanSection({
       </div>
       {tier !== "basic" ? (
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${
-          tier === "vip" ? "bg-amber-400 text-amber-900" : "bg-violet-200 text-violet-800"
+          tier === "vip" ? "bg-amber-400 text-amber-900" : "bg-violet-200 text-[#361B62]"
         }`}>
           {tier === "vip" ? "VIP" : "TRIAL"}
         </span>

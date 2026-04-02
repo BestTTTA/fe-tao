@@ -9,6 +9,7 @@ import TransparentHeader from "@/components/TransparentHeader";
 import { toPublicUrl } from "@/utils/toPublicUrl";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateShareImage, type ShareSocialItem } from "@/utils/generateShareImage";
+import { useLoading } from "@/components/LoadingOverlay";
 
 type UserProfile = {
   full_name: string | null;
@@ -42,6 +43,7 @@ type Card = {
 
 export default function ReadingResultPage() {
   const supabase = createClient();
+  const { showLoading, hideLoading } = useLoading();
   const params = useParams<{ spreadId: string }>();
   const search = useSearchParams();
 
@@ -239,6 +241,7 @@ export default function ReadingResultPage() {
     setShowMenu(false);
     try {
       setGeneratingImage(true);
+      showLoading("กำลังสร้างภาพ...");
       const blob = await generateShareImage(buildShareImageOpts());
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -253,6 +256,7 @@ export default function ReadingResultPage() {
       alert("ไม่สามารถสร้างภาพได้");
     } finally {
       setGeneratingImage(false);
+      hideLoading();
     }
   };
 
@@ -260,6 +264,7 @@ export default function ReadingResultPage() {
     setShowMenu(false);
     try {
       setGeneratingImage(true);
+      showLoading("กำลังสร้างภาพ...");
       const blob = await generateShareImage(buildShareImageOpts());
       const file = new File([blob], "tarot-share.jpg", { type: "image/jpeg" });
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -279,6 +284,7 @@ export default function ReadingResultPage() {
       console.error("Error sharing:", err);
     } finally {
       setGeneratingImage(false);
+      hideLoading();
     }
   };
 
@@ -492,7 +498,7 @@ export default function ReadingResultPage() {
                 className="h-full w-16 flex-none rounded-lg object-cover"
               />
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-slate-500">ไพ่ใบที่ {idx + 1}</div>
+                <div className="text-xs text-slate-500">ไพ่ตำแหน่งที่ {idx + 1}</div>
                 <div className="truncate text-sm font-semibold">{c.card_name}</div>
                 {c.describe && (
                   <p className="mt-1 line-clamp-2 text-[12px] text-slate-700">{c.describe}</p>

@@ -31,38 +31,38 @@ export default function ContactPage() {
   }, [supabase]);
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-start bg-cover bg-center text-white"
-      style={{ backgroundImage: "url('/images/bg-stars.jpg')" }}
-    >
-      <TransparentHeader
-        title="ติดต่อเรา"
-        subtitle=""
-        routeRules={{
-          "/menu/contact": {
-            showBack: true,
-            showLogo: false,
-            showMenu: false,
-            showSearch: false,
-            backPath: "/menu",
-          },
-        }}
-      />
+  <div
+    className="min-h-screen w-full flex flex-col bg-cover bg-center bg-no-repeat text-white"
+    style={{ backgroundImage: "url('/images/bg-stars.jpg')" }}
+  >
+    <TransparentHeader
+      title="ติดต่อเรา"
+      subtitle=""
+      routeRules={{
+        "/menu/contact": {
+          showBack: true,
+          showLogo: false,
+          showMenu: false,
+          showSearch: false,
+          backPath: "/menu",
+        },
+      }}
+    />
 
-      <div className="w-full max-w-md p-4 mt-20">
-        <div className="bg-white/90 text-black rounded-xl p-5 shadow-lg">
-          {loading ? (
-            <p className="text-center text-slate-500">กำลังโหลด...</p>
-          ) : htmlContent ? (
-            <div
-              className="html-content"
-              dangerouslySetInnerHTML={{ __html: htmlContent }}
-            />
-          ) : (
-            <p className="text-center text-slate-500">ไม่พบข้อมูล</p>
-          )}
-        </div>
+    <div className="w-full min-h-screen max-w-md mx-auto p-4 mt-20">
+      <div className="h-svh bg-white/90 text-black rounded-xl p-5 shadow-lg">
+        {loading ? (
+          <p className="text-center text-slate-500">กำลังโหลด...</p>
+        ) : htmlContent ? (
+          <div
+            className="html-content"
+            dangerouslySetInnerHTML={{ __html: htmlContent }}
+          />
+        ) : (
+          <p className="text-center text-slate-500">ไม่พบข้อมูล</p>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 }

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import TransparentHeader from "@/components/TransparentHeader";
 import { createClient } from "@/utils/supabase/client";
 import StatusModal from "@/components/StatusModal";
+import { useLoading } from "@/components/LoadingOverlay";
+import { getUserTier, type ProfilePlan } from "@/lib/user-tier";
 
 type PlanKey = "monthly" | "yearly";
 type PlanType = "FREE" | "MONTH" | "YEAR";
@@ -11,24 +13,23 @@ type PlanType = "FREE" | "MONTH" | "YEAR";
 interface PriceInfo {
   key: PlanKey;
   id: string;
-  label: string;
   amount: number;
   currency: string;
-  features: string[];
-  recommended?: boolean;
 }
 
 export default function VipPackagesPage() {
   const supabase = createClient();
-  const [selected, setSelected] = useState<PlanKey>("yearly");
+  const { showLoading, hideLoading } = useLoading();
   const [prices, setPrices] = useState<PriceInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [purchasedPlan, setPurchasedPlan] = useState<string | null>(null);
   const [currentPlan, setCurrentPlan] = useState<PlanType | null>(null);
   const [planExpire, setPlanExpire] = useState<string | null>(null);
+  const [userTier, setUserTier] = useState<string>("basic");
+  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const [selected, setSelected] = useState<PlanKey>("yearly");
 
-  // ✅ โหลดข้อมูลแผนปัจจุบันของผู้ใช้
   useEffect(() => {
     async function fetchCurrentPlan() {
       const {
@@ -46,11 +47,20 @@ export default function VipPackagesPage() {
         setCurrentPlan(data.plan_type as PlanType);
         setPlanExpire(data.plan_current_period_end);
       }
+
+      const tier = getUserTier(data as ProfilePlan | null);
+      setUserTier(tier);
+
+      if (data?.plan_current_period_end) {
+        const end = new Date(data.plan_current_period_end).getTime();
+        const now = Date.now();
+        const days = Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24)));
+        setDaysLeft(days);
+      }
     }
     fetchCurrentPlan();
   }, [supabase]);
 
-  // ✅ โหลดราคาแพ็กเกจจาก Stripe
   useEffect(() => {
     async function fetchPrices() {
       try {
@@ -60,17 +70,8 @@ export default function VipPackagesPage() {
           const formatted: PriceInfo[] = data.map((p) => ({
             key: p.recurring?.interval === "year" ? "yearly" : "monthly",
             id: p.id,
-            label:
-              p.recurring?.interval === "year"
-                ? "VIP แบบรายปี"
-                : "VIP แบบรายเดือน",
             amount: p.unit_amount,
             currency: p.currency,
-            features:
-              p.recurring?.interval === "year"
-                ? ["ดูดวงได้ไม่จำกัด", "อ่านบทความพรีเมียมไม่จำกัด"]
-                : ["ดูดวงได้วันละ 20 ครั้ง", "อ่านบทความพรีเมียม"],
-            recommended: p.recurring?.interval === "year",
           }));
           setPrices(formatted);
         }
@@ -81,25 +82,18 @@ export default function VipPackagesPage() {
     fetchPrices();
   }, []);
 
-  // ✅ อ่าน query param ?status=... แล้วลบออกหลังใช้งาน
   useEffect(() => {
     const url = new URL(window.location.href);
     const st = url.searchParams.get("status");
-
     if (!st) return;
-
     setStatus(st);
-
     if (st === "success") {
       savePurchase();
-
-      // ลบ query ออกจาก URL เพื่อป้องกันซ้ำ
       url.searchParams.delete("status");
       window.history.replaceState({}, "", url.pathname);
     }
   }, []);
 
-  // ✅ บันทึกข้อมูลการซื้อใน Supabase
   async function savePurchase() {
     try {
       const {
@@ -129,12 +123,12 @@ export default function VipPackagesPage() {
     }
   }
 
-  // ✅ เรียก Stripe Checkout
   const onPay = async (k: PlanKey) => {
     const price = prices.find((p) => p.key === k);
     if (!price) return alert("ไม่พบราคา");
 
     setLoading(true);
+    showLoading("กำลังเชื่อมต่อ...");
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -150,6 +144,7 @@ export default function VipPackagesPage() {
       alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
     } finally {
       setLoading(false);
+      hideLoading();
     }
   };
 
@@ -158,16 +153,18 @@ export default function VipPackagesPage() {
       ? new Intl.NumberFormat("th-TH", {
           style: "currency",
           currency: currency || "THB",
-          minimumFractionDigits: 0,
+          minimumFractionDigits: 2,
         }).format(amount / 100)
       : "";
+
+  const monthlyPrice = prices.find((p) => p.key === "monthly");
+  const yearlyPrice = prices.find((p) => p.key === "yearly");
 
   return (
     <main className="relative min-h-screen">
       <TransparentHeader
         title="สมัคร VIP"
         subtitle=""
-        
         routeRules={{
           "/packages": {
             rightAction: "share",
@@ -177,65 +174,162 @@ export default function VipPackagesPage() {
         }}
       />
 
-      {/* ✅ Status Modal */}
       <StatusModal status={status} purchasedPlan={purchasedPlan} />
 
-      {/* พื้นหลัง */}
-      <section
-        className="relative h-[220px] w-full overflow-hidden"
+      {/* Dark gradient overlay on top */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 " />
 
-      />
+      <section className="relative h-[90px] w-full" />
 
-      {/* เนื้อหา */}
-      <div className="relative -mt-16 mx-auto max-w-md px-4 pb-24">
-        <div className="relative overflow-hidden rounded-3xl bg-white/95 p-4 text-slate-900 shadow-xl ring-1 ring-black/5 backdrop-blur">
-          <h1 className="mb-2 text-xl font-extrabold text-slate-900">
-            สมัคร VIP
-          </h1>
-
-          {currentPlan && (
-            <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              คุณเป็นสมาชิก{" "}
-              <strong>
-                {currentPlan === "YEAR"
-                  ? "VIP รายปี"
-                  : currentPlan === "MONTH"
-                  ? "VIP รายเดือน"
-                  : "ฟรี"}
-              </strong>
-              {planExpire && (
-                <div className="text-xs text-emerald-600">
-                  ถึงวันที่ {new Date(planExpire).toLocaleDateString("th-TH")}
+      <div className="relative mx-auto max-w-md px-4 pb-24">
+        {/* White content wrapper */}
+        <div className="rounded-3xl bg-white/95 p-5 text-slate-900 shadow-xl ring-1 ring-black/5 backdrop-blur">
+          {/* Trial banner */}
+          {userTier === "trial" && daysLeft !== null && (
+            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <div className="grid h-8 w-8 flex-none place-items-center rounded-full border-2 border-[#361B62] bg-[#361B62] shadow-sm">
+                <CheckIconWhite size={16} />
+              </div>
+              <div>
+                <div className="text-[15px] font-bold text-[#361B62]">
+                  คุณกำลังใช้ VIP ทดลอง
                 </div>
-              )}
+                <div className="text-[13px] text-slate-400">
+                  เหลืออีก {daysLeft} วัน
+                </div>
+              </div>
             </div>
           )}
 
-          <p className="mb-4 text-[13px] leading-6 text-slate-600">
-            เข้าร่วมเป็น{" "}
-            <span className="font-bold text-amber-600">VIP</span> เพื่อปลดล็อก
-            การดูดวงและบทความสุดพิเศษไม่จำกัด
+          {/* VIP banner */}
+          {userTier === "vip" && (
+            <div className="mb-5 flex items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3 ring-1 ring-amber-200">
+              <div className="grid h-9 w-9 flex-none place-items-center rounded-full bg-amber-500 shadow-sm">
+                <CrownIcon />
+              </div>
+              <div>
+                <div className="text-[15px] font-bold text-amber-900">
+                  คุณเป็นสมาชิก{" "}
+                  {currentPlan === "YEAR" ? "VIP รายปี" : "VIP รายเดือน"}
+                </div>
+                {planExpire && (
+                  <div className="text-[13px] text-amber-700">
+                    ถึงวันที่{" "}
+                    {new Date(planExpire).toLocaleDateString("th-TH")}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Hero */}
+          <h1 className="text-[22px] font-extrabold leading-tight text-slate-900">
+            เปลี่ยนมือถือเป็น &ldquo;โต๊ะดูดวง&rdquo; ส่วนตัวระดับ VIP
+          </h1>
+          <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
+            ปลดล็อกไพ่ลิขสิทธิ์มากกว่า 20 สำรับ เปิดได้ไม่จำกัด 24 ชม.
           </p>
 
-          <div className="space-y-3">
-            {prices.map((plan) => (
-              <PlanCard
-                key={plan.key}
-                title={plan.label}
-                priceText={`${formatPrice(plan.amount, plan.currency)}`}
-                features={plan.features}
-                selected={selected === plan.key}
-                onSelect={() => setSelected(plan.key)}
-                onPay={() => onPay(plan.key)}
-                recommended={plan.recommended}
-                disabled={loading}
-                isCurrent={
-                  (plan.key === "yearly" && currentPlan === "YEAR") ||
-                  (plan.key === "monthly" && currentPlan === "MONTH")
-                }
-                expireDate={planExpire}
+          {/* Benefits */}
+          <div className="mt-5">
+            <h2 className="text-base font-bold text-slate-900">
+              สิทธิพิเศษ VIP ที่คุณจะได้รับ:
+            </h2>
+            <ul className="mt-3 space-y-3">
+              <BenefitItem
+                title="เข้าถึงทุกสำรับ:"
+                desc="ไพ่แท้กว่า 20 ชุด (รวมชุดดัง) ในแอปเดียว"
               />
-            ))}
+              <BenefitItem
+                title="ดูได้ไม่จำกัด:"
+                desc="เปิดไพ่กี่ครั้งก็ได้ต่อวัน ไม่มีการจำกัด"
+              />
+              <BenefitItem
+                title="บันทึก & แชร์:"
+                desc="เซฟภาพผลทำนายสวยๆ ส่งต่อได้ทันที"
+              />
+              <BenefitItem
+                title="ลองใช้ฟรี!:"
+                desc="30 วันแรก สำหรับสมาชิกใหม่"
+              />
+            </ul>
+          </div>
+
+          {/* Plan cards */}
+          <div className="mt-6 space-y-4">
+          {/* Monthly */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-lg">
+            <h3 className="text-lg font-extrabold">VIP แบบรายเดือน</h3>
+            <ul className="mt-3 space-y-2">
+              <FeatureItem text="68.- (ปกติ 98.-)" />
+              <FeatureItem text="เฉลี่ยวันละไม่ถึง 3 บาท" />
+            </ul>
+            {currentPlan === "MONTH" ? (
+              <CurrentBadge expireDate={planExpire} />
+            ) : (
+              <button
+                disabled={loading}
+                type="button"
+                onClick={() => onPay("monthly")}
+                className={`mt-4 w-full rounded-xl py-3.5 text-center text-base font-bold text-white shadow-lg transition ${
+                  loading
+                    ? "bg-violet-400 opacity-60"
+                    : "bg-[#361B62] hover:bg-[#2a1550] active:scale-[0.98]"
+                }`}
+              >
+                {loading
+                  ? "กำลังเชื่อมต่อ..."
+                  : monthlyPrice
+                  ? formatPrice(monthlyPrice.amount, monthlyPrice.currency)
+                  : "..."}
+              </button>
+            )}
+          </div>
+
+          {/* Yearly */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-lg">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="rounded-md bg-amber-400 px-2.5 py-1 text-[11px] font-extrabold text-amber-900 shadow-sm">
+                แนะนำ
+              </span>
+              <h3 className="text-lg font-extrabold">VIP แบบรายปี</h3>
+            </div>
+            <ul className="mt-3 space-y-2">
+              <FeatureItem text="680.- (ปกติ 980.-)" />
+              <FeatureItem text="เฉลี่ยวันละไม่ถึง 2 บาท" />
+              <FeatureItem text="รับฟรี! กล่องสุ่มมูลค่า 500.- (ส่งตรงถึงบ้าน) *มีจำนวนจำกัด" />
+            </ul>
+            {currentPlan === "YEAR" ? (
+              <CurrentBadge expireDate={planExpire} />
+            ) : (
+              <button
+                disabled={loading}
+                type="button"
+                onClick={() => onPay("yearly")}
+                className={`mt-4 w-full rounded-xl py-3.5 text-center text-base font-bold text-white shadow-lg transition ${
+                  loading
+                    ? "bg-violet-400 opacity-60"
+                    : "bg-[#361B62] hover:bg-[#2a1550] active:scale-[0.98]"
+                }`}
+              >
+                {loading
+                  ? "กำลังเชื่อมต่อ..."
+                  : yearlyPrice
+                  ? formatPrice(yearlyPrice.amount, yearlyPrice.currency)
+                  : "..."}
+              </button>
+            )}
+          </div>
+        </div>
+
+          {/* Restore purchase */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              className="text-sm font-medium text-slate-400 underline underline-offset-4 hover:text-slate-600"
+            >
+              กู้คืนการซื้อ
+            </button>
           </div>
         </div>
       </div>
@@ -243,103 +337,68 @@ export default function VipPackagesPage() {
   );
 }
 
-/* ---------------- Components ---------------- */
-function PlanCard({
-  title,
-  priceText,
-  features,
-  selected,
-  onSelect,
-  onPay,
-  recommended = false,
-  disabled = false,
-  isCurrent = false,
-  expireDate,
-}: {
-  title: string;
-  priceText: string;
-  features: string[];
-  selected?: boolean;
-  onSelect: () => void;
-  onPay: () => void;
-  recommended?: boolean;
-  disabled?: boolean;
-  isCurrent?: boolean;
-  expireDate?: string | null;
-}) {
+/* ---------- UI Components ---------- */
+
+function BenefitItem({ title, desc }: { title: string; desc: string }) {
   return (
-    <div
-      onClick={onSelect}
-      className={`cursor-pointer rounded-2xl border p-4 shadow-sm transition ${
-        selected
-          ? "border-violet-400 bg-violet-50/60"
-          : "border-slate-200 bg-white"
-      }`}
-    >
-      <div className="mb-2 flex items-center gap-2">
-        {recommended && (
-          <span className="rounded-md bg-amber-400 px-2 py-0.5 text-xs font-bold text-slate-900">
-            แนะนำ
-          </span>
-        )}
-        <h3 className="text-[15px] font-extrabold text-slate-900">{title}</h3>
-      </div>
+    <li className="flex items-start gap-3">
+      <span className="mt-0.5 grid h-6 w-6 flex-none place-items-center rounded-full bg-emerald-500 shadow-sm">
+        <CheckIconWhite size={14} />
+      </span>
+      <span className="text-[15px] leading-snug text-slate-700">
+        <strong className="font-bold text-slate-900">{title}</strong> {desc}
+      </span>
+    </li>
+  );
+}
 
-      <ul className="mb-3 space-y-1.5 text-[13px] text-slate-700">
-        {features.map((f, i) => (
-          <li key={i} className="flex items-start gap-2">
-            <span className="mt-[3px] inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 ring-1 ring-emerald-200">
-              <CheckIcon />
-            </span>
-            <span>{f}</span>
-          </li>
-        ))}
-      </ul>
+function FeatureItem({ text }: { text: string }) {
+  return (
+    <li className="flex items-start gap-2.5">
+      <span className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded-full bg-emerald-500 shadow-sm">
+        <CheckIconWhite size={12} />
+      </span>
+      <span className="text-[14px] leading-snug text-slate-700">{text}</span>
+    </li>
+  );
+}
 
-      {isCurrent ? (
-        <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-center text-[14px] font-semibold text-emerald-700">
-          VIP ปัจจุบัน
-          {expireDate && (
-            <div className="mt-1 text-[12px] font-normal text-emerald-600">
-              (ถึงวันที่ {new Date(expireDate).toLocaleDateString("th-TH")})
-            </div>
-          )}
+function CurrentBadge({ expireDate }: { expireDate?: string | null }) {
+  return (
+    <div className="mt-4 w-full rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-center text-[14px] font-semibold text-emerald-700">
+      VIP ปัจจุบัน
+      {expireDate && (
+        <div className="mt-1 text-[12px] font-normal text-emerald-600">
+          (ถึงวันที่ {new Date(expireDate).toLocaleDateString("th-TH")})
         </div>
-      ) : (
-        <button
-          disabled={disabled}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPay();
-          }}
-          className={`relative inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-[15px] font-semibold text-white shadow transition ${
-            disabled
-              ? "bg-violet-400 opacity-60"
-              : "bg-violet-700 hover:bg-violet-800 focus-visible:ring-violet-500"
-          }`}
-        >
-          {disabled ? "กำลังเชื่อมต่อ..." : priceText}
-        </button>
       )}
     </div>
   );
 }
 
-/* ---------------- Icons ---------------- */
-function CheckIcon() {
+/* ---------- Icons ---------- */
+
+function CheckIconWhite({ size = 14 }: { size?: number }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      width="12"
-      height="12"
+      width={size}
+      height={size}
       fill="none"
-      stroke="currentColor"
-      strokeWidth="3"
+      stroke="white"
+      strokeWidth="3.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
       <path d="m20 6-11 11L4 12" />
+    </svg>
+  );
+}
+
+function CrownIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="white" stroke="none">
+      <path d="M2.5 18.5h19v2h-19zM12 2l3.5 7 6.5-2-4 9H6L2 7l6.5 2z" />
     </svg>
   );
 }

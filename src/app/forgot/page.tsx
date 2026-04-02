@@ -5,6 +5,8 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import TransparentHeader from "@/components/TransparentHeader";
 import { requestPasswordReset } from "@/lib/auth-actions";
+import { useLoading } from "@/components/LoadingOverlay";
+import { useFormStatus } from "react-dom";
 
 function ForgotPasswordForm() {
   const sp = useSearchParams();

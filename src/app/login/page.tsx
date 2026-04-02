@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import TransparentHeader from '@/components/TransparentHeader';
 import { login, signInWithGoogle } from '@/lib/auth-actions'; // ✅ นำเข้า action Google
 import { useFormStatus } from 'react-dom';
-import SocialLogin from '@/components/SocialLogin'; // ✅ คอมโพเนนต์ที่แยกออกมา
+import SocialLogin from '@/components/SocialLogin';
+import { useLoading } from '@/components/LoadingOverlay';
 
 export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
@@ -102,6 +103,16 @@ export default function LoginPage() {
 
 function BottomBar() {
   const { pending } = useFormStatus();
+  const { showLoading, hideLoading } = useLoading();
+
+  useEffect(() => {
+    if (pending) {
+      showLoading("กำลังล็อกอิน...");
+    } else {
+      hideLoading();
+    }
+  }, [pending, showLoading, hideLoading]);
+
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 ">
       <div className="pointer-events-auto mx-auto max-w-md w-full">

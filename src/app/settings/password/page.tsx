@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import TransparentHeader from "@/components/TransparentHeader";
 import AlertModal from "@/components/AlertModal";
+import { useLoading } from "@/components/LoadingOverlay";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { showLoading, hideLoading } = useLoading();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -63,6 +65,7 @@ export default function ChangePasswordPage() {
 
     try {
       setLoading(true);
+      showLoading("กำลังเปลี่ยนรหัสผ่าน...");
 
       // Get current user
       const {
@@ -117,6 +120,7 @@ export default function ChangePasswordPage() {
       showAlert("เกิดข้อผิดพลาด", "ไม่สามารถเปลี่ยนรหัสผ่านได้ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setLoading(false);
+      hideLoading();
     }
   };
 

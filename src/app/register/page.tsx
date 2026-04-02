@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import TransparentHeader from "@/components/TransparentHeader";
 import { signup } from "../../lib/auth-actions";
 import { useFormStatus } from "react-dom";
 import SocialLogin from "@/components/SocialLogin";
+import { useLoading } from "@/components/LoadingOverlay";
 
 export default function RegisterPage() {
   const [showPass, setShowPass] = useState(false);
@@ -253,6 +254,16 @@ export default function RegisterPage() {
 
 function BottomBar() {
   const { pending } = useFormStatus();
+  const { showLoading, hideLoading } = useLoading();
+
+  useEffect(() => {
+    if (pending) {
+      showLoading("กำลังลงทะเบียน...");
+    } else {
+      hideLoading();
+    }
+  }, [pending, showLoading, hideLoading]);
+
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
       <div className="pointer-events-auto mx-auto w-full max-w-md">

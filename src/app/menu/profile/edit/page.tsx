@@ -7,6 +7,7 @@ import TransparentHeader from "@/components/TransparentHeader";
 import ThaiAddressFields from "@/components/ThaiAddressFields";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { useLoading } from "@/components/LoadingOverlay";
 
 type SocialKey = "facebook" | "instagram" | "tiktok" | "line" | "youtube";
 
@@ -37,6 +38,7 @@ const SOCIAL_META: Record<SocialKey, { label: string; icon: string }> = {
 export default function EditProfilePage() {
   const supabase = createClient();
   const router = useRouter();
+  const { showLoading, hideLoading } = useLoading();
 
   const [data, setData] = useState<FormState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,6 +131,7 @@ export default function EditProfilePage() {
     if (!data) return;
     try {
       setSaving(true);
+      showLoading("กำลังบันทึก...");
       const { data: { user: sessionUser } } = await supabase.auth.getUser();
       if (!sessionUser) throw new Error("ไม่พบผู้ใช้");
 
@@ -166,6 +169,7 @@ export default function EditProfilePage() {
       alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
       setSaving(false);
+      hideLoading();
     }
   };
 

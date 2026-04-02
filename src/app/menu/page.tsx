@@ -10,10 +10,12 @@ import ConfirmModal from "@/components/ConfirmModal";
 import AlertModal from "@/components/AlertModal";
 import { createClient } from "@/utils/supabase/client";
 import { useState } from "react";
+import { useLoading } from "@/components/LoadingOverlay";
 
 export default function MenuPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { showLoading, hideLoading } = useLoading();
   const [language, setLanguage] = useState("ไทย");
   const [openLang, setOpenLang] = useState(false);
   const [openLogoutConfirm, setOpenLogoutConfirm] = useState(false);
@@ -24,6 +26,7 @@ export default function MenuPage() {
   const handleDeleteAccount = async () => {
     try {
       setSubmitting(true);
+      showLoading("กำลังดำเนินการ...");
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -60,6 +63,7 @@ export default function MenuPage() {
       alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
     } finally {
       setSubmitting(false);
+      hideLoading();
     }
   };
 

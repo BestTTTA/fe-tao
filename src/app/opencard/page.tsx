@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 import { createClient } from "@/utils/supabase/client";
 import { getUserTier, hasPremiumAccess, type UserTier, type ProfilePlan } from "@/lib/user-tier";
+import { useLoading } from "@/components/LoadingOverlay";
 
 type DbDeck = {
   id: number;
@@ -32,6 +33,7 @@ const toPublicUrl = (p?: string | null) => {
 export default function OpenCardPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { showLoading, hideLoading } = useLoading();
 
   const [tab, setTab] = useState<TabKey>("all");
   const [loading, setLoading] = useState(true);
@@ -182,6 +184,7 @@ export default function OpenCardPage() {
       }
 
       try {
+        showLoading("กำลังเปิดสำรับ...");
         const res = await fetch(`/api/decks/${deckId}/open`, {
           method: "GET",
         });
@@ -203,9 +206,11 @@ export default function OpenCardPage() {
       } catch (err) {
         console.error("open deck failed", err);
         alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+      } finally {
+        hideLoading();
       }
     },
-    [router, userId, userTier],
+    [router, userId, userTier, showLoading, hideLoading],
   );
 
   return (

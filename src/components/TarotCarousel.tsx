@@ -132,26 +132,54 @@ export default function TarotCarousel({
   }, [index, autoPlay, interval, slides.length, loading]);
 
   // swipe / drag
+  const dragging = useRef(false);
   const startX = useRef(0);
   const deltaX = useRef(0);
+  const swiped = useRef(false);
+
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    dragging.current = true;
+    startX.current = e.touches[0].clientX;
+    deltaX.current = 0;
+    swiped.current = false;
+    if (timer.current) clearTimeout(timer.current);
+  };
+
+  const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!dragging.current) return;
+    deltaX.current = e.touches[0].clientX - startX.current;
+  };
+
+  const onTouchEnd = () => {
+    if (!dragging.current) return;
+    const threshold = 50;
+    if (deltaX.current > threshold) { prev(); swiped.current = true; }
+    else if (deltaX.current < -threshold) { next(); swiped.current = true; }
+    dragging.current = false;
+    startX.current = 0;
+    deltaX.current = 0;
+  };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragging.current = true;
     startX.current = e.clientX;
     deltaX.current = 0;
+    swiped.current = false;
     (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
     if (timer.current) clearTimeout(timer.current);
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (startX.current) {
-      deltaX.current = e.clientX - startX.current;
-    }
+    if (!dragging.current) return;
+    deltaX.current = e.clientX - startX.current;
   };
 
   const onPointerUp = () => {
-    const threshold = 60;
-    if (deltaX.current > threshold) prev();
-    else if (deltaX.current < -threshold) next();
+    if (!dragging.current) return;
+    const threshold = 50;
+    if (deltaX.current > threshold) { prev(); swiped.current = true; }
+    else if (deltaX.current < -threshold) { next(); swiped.current = true; }
+    dragging.current = false;
     startX.current = 0;
     deltaX.current = 0;
   };
@@ -165,6 +193,8 @@ export default function TarotCarousel({
 
   // click handler ของแต่ละสไลด์
   const handleSlideClick = (slideIdx: number) => {
+    // ถ้าเพิ่ง swipe → ไม่ navigate
+    if (swiped.current) { swiped.current = false; return; }
     // ปิดการนำทางทั้งหมด?
     if (!enableLink) return;
 
@@ -193,7 +223,10 @@ export default function TarotCarousel({
       >
         <div
           className={`flex ${fitContent ? "" : "h-full"} transition-transform duration-500`}
-          style={{ transform: `translateX(-${index * 100}%)` }}
+          style={{ transform: `translateX(-${index * 100}%)`, touchAction: "pan-y" }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import TransparentHeader from "@/components/TransparentHeader";
 import TarotCarousel from "@/components/TarotCarousel";
+import ImageWithLoader from "@/components/ImageWithLoader";
 import { getUserTier, hasPremiumAccess } from "@/lib/user-tier";
 
 type Deck = {
@@ -140,14 +141,15 @@ export default async function DeckDetailPage({
                 href={`/decks/${deck.id}/cards/${c.id}`}
                 className="flex gap-3 rounded-2xl bg-white p-3"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={toPublicUrl(c.card_url) || "/placeholder-card.jpg"}
-                  alt={c.card_name}
-                  className="h-20 w-14 flex-none rounded-[10px]"
-                />
+                <div className="h-20 w-14 flex-none">
+                  <ImageWithLoader
+                    src={toPublicUrl(c.card_url) || "/placeholder-card.jpg"}
+                    alt={c.card_name}
+                    className="h-20 w-14 rounded-[10px]"
+                  />
+                </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] text-black">ไพ่ตำแหน่งที่ {i + 1}</div>
+                  <div className="text-[13px] text-black">ไพ่ใบที่ {i + 1}</div>
                   <div className="truncate text-sm font-semibold text-black">
                     {c.card_name}
                   </div>

@@ -32,9 +32,9 @@ export default function ReadingQuestionPage() {
     const d = encodeURIComponent(deckId);
 
     if (mode === "auto") {
-      router.push(`/reading/${spreadId}/manual?deck=${d}&q=${q}&auto=1`);
+      router.replace(`/reading/${spreadId}/manual?deck=${d}&q=${q}&auto=1`);
     } else {
-      router.push(`/reading/${spreadId}/${mode}?deck=${d}&q=${q}`);
+      router.replace(`/reading/${spreadId}/${mode}?deck=${d}&q=${q}`);
     }
   };
 

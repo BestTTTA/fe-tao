@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import ImageWithLoader from "@/components/ImageWithLoader";
 
 type Promotion = {
   id: number;
@@ -242,8 +243,7 @@ export default function TarotCarousel({
               }`}
               onClick={() => handleSlideClick(i)}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <ImageWithLoader
                 src={src}
                 alt=""
                 className={fitContent

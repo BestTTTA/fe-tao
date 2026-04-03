@@ -116,7 +116,7 @@ export default function ManualShufflePage() {
   const confirm = () => {
     if (!canConfirm) return;
     const pick = selectedIndexes.join(",");
-    router.push(
+    router.replace(
       `/reading/${spreadId || "3-card"}/result?deck=${encodeURIComponent(deckId)}&pick=${encodeURIComponent(pick)}&q=${encodeURIComponent(question)}`
     );
   };
@@ -130,7 +130,7 @@ export default function ManualShufflePage() {
     autoNavigated.current = true;
     if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
     const picks = secureShuffle(Array.from({ length: totalCards }, (_, i) => i)).slice(0, need);
-    router.push(
+    router.replace(
       `/reading/${spreadId || "3-card"}/result?deck=${encodeURIComponent(deckId)}&pick=${encodeURIComponent(picks.join(","))}&q=${encodeURIComponent(question)}`
     );
   };

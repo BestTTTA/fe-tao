@@ -133,47 +133,58 @@ export default async function CardDetailPage(props: {
           />
         </div>
 
-        {/* ชื่อการ์ด */}
-        <div className="mt-4 text-center">
-          <h1 className="text-xl font-extrabold tracking-wide">{card.card_name}</h1>
+        {/* ชื่อการ์ด + คำอธิบาย */}
+        <div className="mt-4 text-center px-2">
+          <h1 className="text-2xl font-extrabold tracking-wide uppercase">
+            {card.card_name}
+          </h1>
           {card.describe && (
-            <p className="mt-2 text-[13px] leading-6 text-white/85">{card.describe}</p>
+            <p className="mt-3 text-[14px] leading-7 text-white/85">
+              {card.describe}
+            </p>
           )}
         </div>
 
+        {/* เส้นคั่น */}
+        <div className="mx-auto mt-6 h-[1px] w-3/4 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+
         {/* รายละเอียดเชิงความหมาย */}
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 space-y-6 px-2">
           {card.work_meaning && (
-            <section className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur">
-              <h2 className="text-sm font-bold">การงาน</h2>
-              <p className="mt-1 text-[13px] text-white/90">{card.work_meaning}</p>
+            <section>
+              <h2 className="text-lg font-bold">การงาน:</h2>
+              <ul className="mt-2 list-disc list-outside pl-5 space-y-1">
+                <li className="text-[14px] leading-7 text-white/90">
+                  {card.work_meaning}
+                </li>
+              </ul>
             </section>
           )}
 
           {card.money_meaning && (
-            <section className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur">
-              <h2 className="text-sm font-bold">การเงิน</h2>
-              <p className="mt-1 text-[13px] text-white/90">{card.money_meaning}</p>
+            <section>
+              <h2 className="text-lg font-bold">การเงิน:</h2>
+              <ul className="mt-2 list-disc list-outside pl-5 space-y-1">
+                <li className="text-[14px] leading-7 text-white/90">
+                  {card.money_meaning}
+                </li>
+              </ul>
             </section>
           )}
 
           {card.relation && (
-            <section className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur">
-              <h2 className="text-sm font-bold">ความสัมพันธ์</h2>
-              <p className="mt-1 text-[13px] text-white/90">{card.relation}</p>
+            <section>
+              <h2 className="text-lg font-bold">ความสัมพันธ์:</h2>
+              <ul className="mt-2 list-disc list-outside pl-5 space-y-1">
+                <li className="text-[14px] leading-7 text-white/90">
+                  {card.relation}
+                </li>
+              </ul>
             </section>
           )}
         </div>
 
-        {/* ลิงก์กลับไปเด็ค */}
-        <div className="mt-6">
-          <Link
-            href={`/decks/${deck.id}`}
-            className="inline-flex w-full items-center justify-center rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-white/20"
-          >
-            กลับไปเด็ค {deck.deck_name}
-          </Link>
-        </div>
+      
       </div>
     </main>
   );

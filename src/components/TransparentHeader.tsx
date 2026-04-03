@@ -74,7 +74,7 @@ export default function TransparentHeader({
     router.push("/search");
   };
 
-  const handleBack = () => (r.backPath ? router.push(r.backPath) : router.back());
+  const handleBack = () => (r.backPath ? router.replace(r.backPath) : router.back());
 
   // ปุ่มขวา: แยก share/menu/dots-menu ตาม rightAction
   const handleRight = async () => {

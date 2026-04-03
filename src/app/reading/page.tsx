@@ -47,7 +47,7 @@ export default function ReadingSelectPage() {
             routeRules={{
               "/reading": {
                 showLogo: false, showSearch: false, showMenu: false,
-                showBack: true, backPath: "/opencard",
+                showBack: true,
               },
             }}
           />
@@ -136,7 +136,7 @@ function ReadingContent() {
         routeRules={{
           "/reading": {
             showLogo: false, showSearch: false, showMenu: false,
-            showBack: true, backPath: "/opencard",
+            showBack: true,
             showTextTitle: true,
           },
         }}

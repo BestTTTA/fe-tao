@@ -257,21 +257,23 @@ export async function signInWithGoogle() {
 }
 
 export async function signInWithFacebook() {
+  const supabase = await createClient();
   const siteUrl = await getSiteUrl();
 
-  // Generate random state for CSRF protection
-  const state = Math.random().toString(36).substring(7);
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "facebook",
+    options: {
+      redirectTo: `${siteUrl}/auth/callback`,
+      scopes: "email,public_profile",
+    },
+  });
 
-  // Build Facebook OAuth authorization URL
-  const facebookAuthUrl = new URL('https://www.facebook.com/v18.0/dialog/oauth');
-  facebookAuthUrl.searchParams.set('client_id', process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '');
-  facebookAuthUrl.searchParams.set('redirect_uri', `${siteUrl}/auth/facebook/callback`);
-  facebookAuthUrl.searchParams.set('state', state);
-  facebookAuthUrl.searchParams.set('scope', 'email,public_profile');
-  facebookAuthUrl.searchParams.set('response_type', 'code');
+  if (error || !data.url) {
+    console.log(error);
+    redirect("/error");
+  }
 
-  // Redirect to Facebook authorization page
-  redirect(facebookAuthUrl.toString());
+  redirect(data.url);
 }
 
 export async function signInWithApple() {

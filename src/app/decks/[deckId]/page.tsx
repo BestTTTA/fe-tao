@@ -18,7 +18,8 @@ type Deck = {
 type Card = {
   id: number;
   card_name: string;
-  card_url: string | null; // อาจเก็บเป็น storage path
+  card_url: string | null;
+  describe: string | null;
 };
 
 const toPublicUrl = (p?: string | null) => {
@@ -65,7 +66,7 @@ export default async function DeckDetailPage({
   if (canSeeCards) {
     const { data } = await supabase
       .from("cards")
-      .select("id, card_name, card_url")
+      .select("id, card_name, card_url, describe")
       .eq("deck_id", deck.id)
       .order("card_index", { ascending: true });
     cards = (data ?? []) as Card[];
@@ -112,7 +113,7 @@ export default async function DeckDetailPage({
           <div className="mt-3">
             <h2 className="text-[20px] font-semibold text-black">{deck.deck_name}</h2>
             {deck.detail && (
-              <p className="mt-1 text-thin text-black">{deck.detail}</p>
+              <p className="mt-1 text-thin text-black whitespace-pre-line">{deck.detail}</p>
             )}
           </div>
         </div>
@@ -137,7 +138,7 @@ export default async function DeckDetailPage({
               <Link
                 key={c.id}
                 href={`/decks/${deck.id}/cards/${c.id}`}
-                className="flex gap-3 rounded-2xl bg-white p-2 items-center"
+                className="flex gap-3 rounded-2xl bg-white p-3"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -150,9 +151,15 @@ export default async function DeckDetailPage({
                   <div className="truncate text-sm font-semibold text-black">
                     {c.card_name}
                   </div>
-                </div>
-                <div className="grid place-items-center">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="black" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>
+                  {c.describe && (
+                    <div className="truncate text-[12px] text-black/60">
+                      {c.describe}
+                    </div>
+                  )}
+                  <div className="mt-1 flex items-center gap-1 text-[12px] font-medium text-gray-600">
+                    <span>อ่านต่อ</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
+                  </div>
                 </div>
               </Link>
             ))}

@@ -66,7 +66,7 @@ export default function RegisterPage() {
                   type={showPass ? "text" : "password"}
                   placeholder={t.register.passwordPlaceholder}
                   autoComplete="new-password"
-                  minLength={8}
+                  minLength={6}
                   required
                   onInput={(e) => {
                     const input = e.currentTarget as HTMLInputElement;

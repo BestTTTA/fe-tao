@@ -42,7 +42,7 @@ export default function ReadingSelectPage() {
       fallback={
         <main className="relative min-h-screen">
           <TransparentHeader
-            title={t.reading.title}
+            title="เปิดไพ่"
             subtitle=""
             routeRules={{
               "/reading": {
@@ -129,6 +129,7 @@ function ReadingContent() {
 
   return (
     <main className="relative min-h-screen">
+      
       <TransparentHeader
         title={t.reading.title}
         subtitle=""
@@ -136,6 +137,7 @@ function ReadingContent() {
           "/reading": {
             showLogo: false, showSearch: false, showMenu: false,
             showBack: true, backPath: "/opencard",
+            showTextTitle: true,
           },
         }}
       />

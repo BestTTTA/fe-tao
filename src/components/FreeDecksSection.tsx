@@ -230,15 +230,15 @@ function DeckCard({
 /* ------------ Icons ------------ */
 function Heart() {
   return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="white" strokeWidth="4">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="black" strokeWidth="2">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-.98-.98a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.76-8.76a5.5 5.5 0 0 0 0-7.78Z" />
     </svg>
   );
 }
 function HeartSolid() {
   return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="red">
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.09 4.81 13.76 4 15.5 4 18 4 20 6 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="#e11d48">
+      <path d="M12 21.35 10.55 20C5.4 15.36 2 12.28 2 8.5 2 6 3.99 4 6.5 4c1.74 0 3.41.81 4.5 2.09A6.02 6.02 0 0 1 15.5 4C18 4 20 6 20 8.5c0 3.78-3.4 6.86-8.55 11.5L12 21.35Z" />
     </svg>
   );
 }

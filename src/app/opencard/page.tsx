@@ -218,7 +218,7 @@ export default function OpenCardPage() {
   return (
     <main className="relative min-h-screen">
       <TransparentHeader
-        title={t.openCard.title}
+        title="เปิดไพ่"
         subtitle=""
         routeRules={{
           "/opencard": {
@@ -227,6 +227,7 @@ export default function OpenCardPage() {
             showMenu: false,
             showBack: true,
             backPath: "/",
+            showTextTitle: true,
           },
         }}
       />

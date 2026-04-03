@@ -3,7 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getUserTier, hasPremiumAccess, type ProfilePlan } from "@/lib/user-tier";
+
+// module-level flag — reset เมื่อ refresh/เข้าใหม่, คงอยู่เมื่อ navigate ภายใน app
+// เก็บ auth state ที่เคยแสดง popup ไว้ด้วย เพื่อให้แสดงใหม่เมื่อ login/logout
+let popupShownForAuth: string | null | undefined = undefined; // undefined = ยังไม่เคยแสดง
 import { useLanguage } from "@/lib/i18n";
 
 export type TarotPromoModalProps = {
@@ -59,7 +62,15 @@ export default function TarotPromoModal({
       if (!mounted) return;
       setUserId(uid);
 
-      // 2) ถ้ายังไม่ล็อกอิน ดู localStorage เพื่อซ่อนถ้าเคยกด "ไม่แสดง"
+      // 2) ถ้าเคยแสดง popup แล้วใน session นี้ (ไม่ได้ refresh) และ auth state ไม่เปลี่ยน ไม่ต้องแสดงซ้ำ
+      const currentAuth = uid ?? null;
+      if (popupShownForAuth !== undefined && popupShownForAuth === currentAuth) {
+        updateOpen(false);
+        setLoading(false);
+        return;
+      }
+
+      // 3) ถ้ายังไม่ล็อกอิน ดู localStorage เพื่อซ่อนถ้าเคยกด "ไม่แสดง"
       if (!uid) {
         const seen =
           typeof window !== "undefined" &&
@@ -69,23 +80,9 @@ export default function TarotPromoModal({
           setLoading(false);
           return;
         }
-      } else {
-        // 3) ล็อกอินแล้ว เช็กสิทธิ์ VIP ถ้าเป็น VIP ก็ไม่ต้องแสดง modal
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("plan_type, plan_status, plan_current_period_end")
-          .eq("id", uid)
-          .maybeSingle();
-
-        const tier = getUserTier(prof as ProfilePlan | null);
-        if (hasPremiumAccess(tier)) {
-          updateOpen(false);
-          setLoading(false);
-          return;
-        }
       }
 
-      // 4) โหลด popup image + html_content จาก configs table
+      // 5) โหลด popup image + html_content จาก configs table
       const { data: configRow } = await supabase
         .from("configs")
         .select("value, html_content")
@@ -103,6 +100,9 @@ export default function TarotPromoModal({
         setLoading(false);
         return;
       }
+
+      // บันทึกว่าแสดง popup แล้วใน session นี้ พร้อม auth state
+      popupShownForAuth = currentAuth;
 
       setLoading(false);
     })();

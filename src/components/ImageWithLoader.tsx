@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 
 type Props = {
   src: string;
@@ -17,6 +17,14 @@ export default function ImageWithLoader({
   loading,
 }: Props) {
   const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  const refCallback = useCallback((el: HTMLImageElement | null) => {
+    imgRef.current = el;
+    if (el?.complete && el.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, []);
 
   return (
     <div className="relative h-full w-full">
@@ -27,6 +35,7 @@ export default function ImageWithLoader({
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={refCallback}
         src={src}
         alt={alt}
         className={`${className} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}

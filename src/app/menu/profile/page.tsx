@@ -307,10 +307,10 @@ function PlanSection({
       : null
 
   return (
-    <div className="mb-4 flex items-center justify-between">
+    <div className="mb-4 flex items-center justify-between" onClick={onUpgrade}>
       <div>
         <div className="text-sm text-slate-500">{t.profile.yourPackage}</div>
-        <div className="text-lg font-bold text-slate-900">{planLabel}</div>
+        <div className="text-lg font-bold text-slate-900" >{planLabel}</div>
         {expiryDate && (
           <div className="text-xs text-slate-500">{t.profile.expired} {expiryDate}</div>
         )}

@@ -133,12 +133,12 @@ export default async function DeckDetailPage({
         {!canSeeCards ? (
           <></>
         ) : (
-          <section className="mt-4 space-y-3 ">
+          <section className="mt-4 space-y-3">
             {cards.map((c, i) => (
               <Link
                 key={c.id}
                 href={`/decks/${deck.id}/cards/${c.id}`}
-                className="flex gap-3 rounded-2xl bg-white p-3"
+                className="flex gap-3 rounded-2xl focus:bg-white/90 bg-white p-3"
               >
                 <div className="h-26 w-16 flex-none">
                   <ImageWithLoader

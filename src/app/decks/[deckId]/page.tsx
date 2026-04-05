@@ -74,26 +74,29 @@ export default async function DeckDetailPage({
   }
 
   return (
-    <main className="min-h-screen text-white ">
-      <div className="mx-auto max-w-md px-4 pb-24 pt-6 ">
-        {/* Header */}
-        <TransparentHeader
-          title={deck.deck_name}
-          subtitle=""
-          routeRules={{
-            [`/decks/${deckId}`]: {
-              showLogo: false,
-              showSearch: false,
-              showMenu: false,
-              showBack: true,
-              backPath: "/",
-              showTextTitle: true,
-            },
-          }}
-        />
+    <main className="relative min-h-screen text-white">
+      <TransparentHeader
+        title={deck.deck_name}
+        subtitle=""
+        routeRules={{
+          [`/decks/${deckId}`]: {
+            showLogo: false,
+            showSearch: false,
+            showMenu: false,
+            showBack: true,
+            backPath: "/",
+            showTextTitle: true,
+          },
+        }}
+      />
 
+      <section className="relative h-[130px] w-full overflow-hidden">
+        <div className="absolute inset-0" />
+      </section>
+
+      <div className="relative -mt-14 mx-auto max-w-md px-4 pb-24">
         {/* Deck hero */}
-        <div className="mt-14 rounded-2xl border border-white/10 bg-white p-3">
+        <div className="rounded-2xl border border-white/10 bg-white p-3">
 
 
           <TarotCarousel

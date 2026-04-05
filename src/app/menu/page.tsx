@@ -96,11 +96,11 @@ export default function MenuPage() {
       />
 
       <section
-        className="relative h-[210px] w-full overflow-hidden"
+        className="relative h-[110px] w-full overflow-hidden"
 
       />
 
-      <div className="relative -mt-16 mx-auto max-w-md px-4 pb-[120px] space-y-5">
+      <div className="relative mx-auto max-w-md px-4 pb-[60px] space-y-2">
         {/* การใช้งานทั่วไป */}
         <SectionLabel>{t.menu.general}</SectionLabel>
         <Card>
@@ -128,6 +128,8 @@ export default function MenuPage() {
             </>
           )}
         </Card>
+
+        <div className="mt-10"></div>
 
         <SectionLabel>{t.menu.aboutSection}</SectionLabel>
         <Card>
@@ -164,7 +166,7 @@ export default function MenuPage() {
       </div>
 
       {/* Logout */}
-      <div className="flex justify-center pb-12">
+      <div className="flex justify-center">
         <button
           type="button"
           onClick={() => setOpenLogoutConfirm(true)}
@@ -223,7 +225,7 @@ export default function MenuPage() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-1 text-[13px] font-semibold text-white/90">{children}</p>
+    <p className="px-1 text-[15px] font-semibold text-white/90">{children}</p>
   );
 }
 

@@ -7,6 +7,7 @@ import TransparentHeader from "@/components/TransparentHeader";
 import ShufflingCard from "@/components/ShufflingCard";
 import { createClient } from "@/utils/supabase/client";
 import { useLoading } from "@/components/LoadingOverlay";
+import { div } from "framer-motion/client";
 
 /* ---------- helpers ---------- */
 
@@ -94,7 +95,9 @@ export default function ManualShufflePage() {
   }, [deckId]);
 
   const [shuffling, setShuffling] = useState(true);
+  const [autoShuffling, setAutoShuffling] = useState(false);
   const [selectedIndexes, setSelected] = useState<number[]>([]);
+  const isAutoMode = isAuto || autoShuffling;
   const canConfirm = selectedIndexes.length === need;
 
   // ไม่มี auto-stop แล้ว - ให้สับไปเรื่อยๆ จนกว่าจะกดหยุด
@@ -115,9 +118,13 @@ export default function ManualShufflePage() {
   };
 
   const autoPick = () => {
-    const picks = secureShuffle(Array.from({ length: totalCards }, (_, i) => i)).slice(0, need);
-    setShuffling(false);
-    setSelected(picks);
+    if (totalCards === 0) return;
+    setSelected([]);
+    setShuffling(true);
+    setAutoShuffling(true);
+    autoNavigated.current = false;
+    if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
+    autoTimerRef.current = setTimeout(goToResultAuto, 3000);
   };
 
   const confirm = () => {
@@ -173,20 +180,23 @@ export default function ManualShufflePage() {
       {/* Content Container */}
       <div
         className="relative flex flex-col min-h-[calc(100vh-100px)] sm:min-h-[calc(100vh-120px)]"
-        onClick={isAuto ? goToResultAuto : undefined}
+        onClick={isAutoMode ? goToResultAuto : undefined}
       >
         {/* Main Content - Centered */}
         <div className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 pb-32 sm:pb-36">
           {shuffling ? (
             /* ระหว่างสับไพ่: ไพ่ใบเดียวกลางจอพร้อม animation flip */
-            <div className="flex flex-col items-center gap-8">
+            <div className="flex flex-col items-center gap-2">
               <div className="h-48 w-48 flex items-center justify-center">
                 <ShufflingCard backUrl={cardBackUrl} />
               </div>
               <div className="flex items-center justify-center gap-2 text-white/90">
-                <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-xs sm:text-sm">
-                  {isAuto ? "กำลังสุ่มไพ่... แตะที่หน้าจอเพื่อข้าม" : "กำลังสับไพ่... กดหยุดเมื่อคุณพร้อม"}
+                <span className="text-xs sm:text-sm animate-pulse">
+                  {isAutoMode ? "กำลังสับไพ่" : 
+                  <div className="flex items-center flex-col">
+                    <h1 className="text-[16px] font-bold">ระบบจะสับไพ่อัตโนมัติ</h1>  
+                    <h2 className="text-[12px] font-thin">แตะเพื่อข้ามเมื่อคุณพึงพอใจแล้ว</h2>  
+                  </div>}
                 </span>
               </div>
             </div>
@@ -196,11 +206,8 @@ export default function ManualShufflePage() {
               <div className="mb-3 sm:mb-4 text-center text-white/90 px-2">
                 <div className="space-y-1">
                   <div className="text-base sm:text-lg font-medium">
-                    เลือกไพ่ {selectedIndexes.length}/{need} ใบ
+                    เลือกไพ่ใบที่ {selectedIndexes.length}/{need}
                   </div>
-                  {selectedIndexes.length < need && (
-                    <div className="text-xs sm:text-sm text-white/70">แตะที่ไพ่เพื่อเลือก</div>
-                  )}
                 </div>
               </div>
 
@@ -219,12 +226,12 @@ export default function ManualShufflePage() {
 
         {/* แถบปุ่มล่าง */}
         <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pt-4 pb-safe z-50">
-          <div className="mx-auto max-w-md px-3 sm:px-4 pb-2 sm:pb-3">
+          <div className="mx-auto max-w-md px-3 sm:px-4 pb-2 sm:pb-3 bg-white py-8 rounded-t-4xl">
             {shuffling ? (
-              !isAuto && (
+              !isAutoMode && (
                 <button
                   onClick={stopShuffle}
-                  className="w-full rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-3.5 sm:py-4 text-center text-base sm:text-lg font-semibold text-slate-900 shadow-lg active:scale-95 transition-transform duration-150"
+                  className="w-full mb-4 rounded-xl sm:rounded-2xl rounded-xl border bg-white px-4 py-3.5 sm:py-4 text-center text-base sm:text-lg font-semibold text-slate-900 shadow-lg active:scale-95 transition-transform duration-150"
                 >
                   หยุดสับไพ่
                 </button>

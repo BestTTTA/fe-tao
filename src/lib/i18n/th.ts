@@ -150,7 +150,7 @@ const th = {
   openCard: {
     title: "เปิดไพ่",
     subtitle: "เลือกสำรับไพ่ที่ต้องการใช้งาน",
-    all: "สำหรับทั้งหมด",
+    all: "สำรับทั้งหมด",
     favorite: "Favorite",
     viewInfo: "ดูข้อมูล",
     readFortune: "ดูดวง",

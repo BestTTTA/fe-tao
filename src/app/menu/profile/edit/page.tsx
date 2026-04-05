@@ -182,7 +182,7 @@ export default function EditProfilePage() {
     return <div className="flex h-screen items-center justify-center text-white">{t.profileEdit.noUser}</div>;
 
   return (
-    <main className="relative min-h-screen">
+    <main className="relative min-h-screen ">
       <TransparentHeader
         title={t.profileEdit.title}
         subtitle=""
@@ -198,7 +198,7 @@ export default function EditProfilePage() {
 
       <section className="relative h-[80px] w-full" />
 
-      <form id="profile-form" onSubmit={onSubmit} className="mx-auto max-w-md px-4 pb-[100px] text-white space-y-3">
+      <form id="profile-form" onSubmit={onSubmit} className="mx-auto max-w-md px-4 pb-[100px] text-white space-y-3 mt-10">
 
         {/* ชื่อ-นามสกุล-ชื่อเล่น-เบอร์-อีเมล */}
         <Field label={t.profileEdit.firstName}>

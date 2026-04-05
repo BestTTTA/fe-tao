@@ -382,7 +382,7 @@ export default function ReadingResultPage() {
             <img
               src={cardsImageUrl}
               alt="your cards"
-              className="mx-auto h-auto w-full"
+              className="mx-auto h-auto w-full rounded-lg"
             />
           ) : (
             <SpreadCardLayout

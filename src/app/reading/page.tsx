@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 import { createClient } from "@/utils/supabase/client";
 import { useLanguage } from "@/lib/i18n";
+import { useLoading } from "@/components/LoadingOverlay";
 import type { Dictionary } from "@/lib/i18n/th";
 
 type Spread = {
@@ -82,6 +83,8 @@ function ReadingContent() {
 
   const [loading, setLoading] = useState(true);
   const [isVip, setIsVip] = useState(false);
+  const [navigating, setNavigating] = useState(false);
+  const { showLoading } = useLoading();
 
   useEffect(() => {
     let mounted = true;
@@ -107,10 +110,10 @@ function ReadingContent() {
     return () => { mounted = false; };
   }, [supabase]);
 
-  const visibleSpreads = useMemo(() => {
-    if (isVip) return BASE_SPREADS.filter((s) => VIP_SPREADS.includes(s.id));
-    return BASE_SPREADS;
-  }, [isVip]);
+  const visibleSpreads = useMemo(
+    () => BASE_SPREADS.filter((s) => VIP_SPREADS.includes(s.id)),
+    []
+  );
 
   const getSpreadTitle = (s: Spread) => {
     if (s.id === "12-circle") return t.reading.circleSpread;
@@ -118,9 +121,14 @@ function ReadingContent() {
   };
 
   const goNext = (spreadId: string) => {
+    if (navigating) return;
     if (isVip) {
+      setNavigating(true);
+      showLoading();
       router.push(`/reading/${mapSpreadId(spreadId)}?deck=${encodeURIComponent(deckId)}`);
     } else if (FREE_SPREADS.includes(spreadId)) {
+      setNavigating(true);
+      showLoading();
       router.push(`/reading/${mapSpreadId(spreadId)}?deck=${encodeURIComponent(deckId)}`);
     } else {
       router.push("/packages");
@@ -195,7 +203,12 @@ function SpreadItem({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-stretch gap-3 rounded-3xl p-3 text-left ring-1 backdrop-blur bg-white/10 ring-white/15 hover:bg-white/15 active:scale-[0.98] transition-transform"
+      aria-disabled={showVipTag}
+      className={`flex w-full items-stretch gap-3 rounded-3xl p-3 text-left ring-1 bg-white/4 ring-white/15 transition-transform ${
+        showVipTag
+          ? "opacity-40"
+          : "hover:bg-white/15 active:scale-[0.98]"
+      }`}
     >
       <div className="grid place-items-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -204,7 +217,7 @@ function SpreadItem({
           alt={title}
           width={84}
           height={84}
-          className="h-[84px] w-[84px] rounded-2xl object-contain bg-white/10 ring-1 ring-white/20"
+          className="h-[84px] w-[84px] rounded-2xl object-contain "
         />
       </div>
       <div className="flex-1 flex flex-col justify-center">

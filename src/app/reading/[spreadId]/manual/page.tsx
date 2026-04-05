@@ -6,6 +6,7 @@ import { useRouter, useSearchParams, useParams } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 import ShufflingCard from "@/components/ShufflingCard";
 import { createClient } from "@/utils/supabase/client";
+import { useLoading } from "@/components/LoadingOverlay";
 
 /* ---------- helpers ---------- */
 
@@ -47,6 +48,12 @@ export default function ManualShufflePage() {
   const deckId = search.get("deck") ?? "magician-dark";
   const question = search.get("q") ?? "";
   const isAuto = search.get("auto") === "1";
+  const { hideLoading } = useLoading();
+
+  // ซ่อน global loading overlay ที่ตั้งไว้จากหน้า question ตอนเข้ามาถึงหน้านี้
+  useEffect(() => {
+    hideLoading();
+  }, [hideLoading]);
 
   const [cardBackUrl, setCardBackUrl] = useState<string>("/card-form/back-card.png");
   const [totalCards, setTotalCards] = useState(0);

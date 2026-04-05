@@ -89,7 +89,7 @@ const th = {
   // ─── Menu ───
   menu: {
     general: "การใช้งานทั่วไป",
-    personalInfo: "ข้อมูลส่วนตัว",
+    personalInfo: "โปรไฟล์",
     systemLanguage: "ภาษาของระบบ",
     password: "รหัสผ่าน",
     aboutSection: "เกี่ยวกับ Tarot & Oracle",
@@ -250,7 +250,7 @@ const th = {
 
   // ─── Profile ───
   profile: {
-    title: "ข้อมูลส่วนตัว",
+    title: "โปรไฟล์",
     loading: "กำลังโหลดข้อมูล...",
     noUser: "ไม่พบข้อมูลผู้ใช้",
     invalidFile: "รูปแบบไฟล์ไม่ถูกต้อง",
@@ -268,6 +268,13 @@ const th = {
     trial: "TRIAL",
     expired: "หมดอายุ",
     subscribeVip: "สมัคร VIP",
+    planTrial: "ทดลองใช้ VIP ฟรี",
+    planBasic: "สมาชิกทั่วไป",
+    planMonthly: "VIP รายเดือน",
+    planYearly: "VIP รายปี",
+    badgeTrial: "Free Trial (VIP)",
+    badgeMonthly: "Monthly VIP",
+    badgeYearly: "Annual VIP",
     stripeId: "รหัสลูกค้า (Stripe)",
     fullName: "ชื่อ-นามสกุล",
     nickname: "ชื่อเล่น",

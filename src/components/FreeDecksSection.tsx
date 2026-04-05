@@ -187,13 +187,15 @@ function DeckCard({
 
       <div className="relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={deck.deck_url || "/placeholder-deck.jpg"}
-          alt={deck.deck_name}
-          className="h-36 w-full rounded-2xl object-cover bg-gradient-to-br from-slate-50 to-slate-100"
-          draggable={false}
-          loading="lazy"
-        />
+        <Link href={`/decks/${deck.id}`}>
+          <img
+            src={deck.deck_url || "/placeholder-deck.jpg"}
+            alt={deck.deck_name}
+            className="h-36 w-full rounded-2xl object-cover bg-gradient-to-br from-slate-50 to-slate-100 cursor-pointer"
+            draggable={false}
+            loading="lazy"
+          />
+        </Link>
 
         <button
           onClick={onToggleFav}

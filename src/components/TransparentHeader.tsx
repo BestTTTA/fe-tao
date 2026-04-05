@@ -117,7 +117,7 @@ export default function TransparentHeader({
   };
 
   return (
-    <header className={`pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-center px-4 pt-4 ${className}`}>
+    <header className={`pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-center px-4 ${className}`}>
       <div className="pointer-events-auto relative flex w-full max-w-[390px] items-center gap-2">
 
         {/* Left: Back or Search — shrink-0 ป้องกันถูกบีบ */}
@@ -149,7 +149,7 @@ export default function TransparentHeader({
           {r.showLogo && logoSrc ? (
             <Image src={logoSrc} alt="Logo" width={20} height={20} />
           ) : r.showTextTitle ? (
-            <div className="truncate text-[28px] font-normal leading-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">{r.title}</div>
+            <div className="truncate text-[26px]  p-4 font-normal leading-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">{r.title}</div>
           ) : (
             <Image src="/logo-title-top.png" alt={r.title ?? "TAROT & ORACLE"} width={200} height={50} className="mx-auto h-20 w-auto drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]" priority />
           )}
@@ -174,7 +174,6 @@ export default function TransparentHeader({
               ) : r.rightAction === "edit" ? (
                 // Pencil/edit icon
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9" />
                   <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
                 </svg>
               ) : r.rightAction === "dots-menu" ? (

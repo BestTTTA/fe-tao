@@ -1,10 +1,11 @@
 // app/reading/[spreadId]/page.tsx
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import TransparentHeader from "@/components/TransparentHeader";
 import { useLanguage } from "@/lib/i18n";
+import { useLoading } from "@/components/LoadingOverlay";
 
 // Helper to get card count from spreadId
 function spreadCountFromId(id?: string): number {
@@ -21,47 +22,59 @@ export default function ReadingQuestionPage() {
   const search = useSearchParams();
   const deckId = search.get("deck") ?? "";
   const [question, setQuestion] = useState("");
+  const [navigating, setNavigating] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const maxH = 168;
   const { t } = useLanguage();
+  const { showLoading, hideLoading } = useLoading();
+
+  // ซ่อน global loading overlay ที่ค้างจากหน้าก่อนหน้า (reading select)
+  useEffect(() => {
+    hideLoading();
+  }, [hideLoading]);
 
   const cardCount = spreadCountFromId(spreadId);
 
   const go = (mode: "auto" | "manual") => {
+    if (navigating) return;
+    setNavigating(true);
+    showLoading();
+
     const q = encodeURIComponent(question.trim());
     const d = encodeURIComponent(deckId);
 
     if (mode === "auto") {
-      router.replace(`/reading/${spreadId}/manual?deck=${d}&q=${q}&auto=1`);
+      router.push(`/reading/${spreadId}/manual?deck=${d}&q=${q}&auto=1`);
     } else {
-      router.replace(`/reading/${spreadId}/${mode}?deck=${d}&q=${q}`);
+      router.push(`/reading/${spreadId}/${mode}?deck=${d}&q=${q}`);
     }
   };
 
   return (
-    <main className="relative min-h-screen text-white flex items-center">
+    <main className="relative min-h-screen text-white flex flex-col">
       <TransparentHeader
         title={t.reading.title}
         subtitle=""
         routeRules={{
           "/reading/*": {
             showLogo: false, showSearch: false, showMenu: false,
-            showBack: true, backPath: `/reading?deck=${encodeURIComponent(deckId)}`,
+            showBack: true,
           },
         }}
       />
-  
+
       <section
-        className="absolute inset-0 -z-10"
- />
+        className="absolute inset-0 -z-10 "
+      />
 
-      <div className="mx-auto max-w-md px-4 pt-20 pb-28 w-full flex flex-col items-center text-center gap-4">
-        <h2 className="text-2xl font-bold text-white drop-shadow">
-          {t.reading.spreadCard} {cardCount} {t.reading.cards}
-        </h2>
+      <h2 className="text-2xl font-bold text-amber-500 drop-shadow text-center mt-30">
+        {t.reading.spreadCard} {cardCount} {t.reading.cards}
+      </h2>
 
-        <div className="w-full text-left">
-          <label className="block text-sm font-semibold text-white/90">{t.reading.questionLabel}</label>
+      <div className="mx-auto max-w-md px-4 pb-28 w-full text-center flex flex-col gap-4 flex-grow justify-center">
+
+        <div className="w-full text-center ">
+          <label className="block text-lg font-normal text-white/90 mb-8">{t.reading.questionLabel}</label>
           <textarea
             ref={textareaRef}
             value={question}
@@ -79,9 +92,6 @@ export default function ReadingQuestionPage() {
             style={{ maxHeight: maxH }}
             className="mt-2 w-full rounded-lg border border-white/20 bg-white/95 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/40 resize-none overflow-y-auto"
           />
-          <div className="mt-1 text-right text-xs text-white/60">
-            {question.length}/100
-          </div>
         </div>
 
         <p className="text-sm text-white/80 italic">
@@ -94,13 +104,15 @@ export default function ReadingQuestionPage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => go("auto")}
-              className="rounded-lg border border-slate-800 bg-white px-3 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+              disabled={navigating}
+              className="rounded-lg border border-slate-800 bg-white px-3 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 active:scale-[0.97] active:bg-slate-100 transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {t.reading.autoShuffle}
             </button>
             <button
               onClick={() => go("manual")}
-              className="rounded-lg border border-slate-800 bg-white px-3 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+              disabled={navigating}
+              className="rounded-lg border border-slate-800 bg-white px-3 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 active:scale-[0.97] active:bg-slate-100 transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {t.reading.manualShuffle}
             </button>

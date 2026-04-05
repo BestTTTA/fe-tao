@@ -85,7 +85,7 @@ export default function TermsAcceptPage() {
               <button
                 onClick={handleAccept}
                 disabled={loading || fetching}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-violet-700 px-4 py-3 text-[15px] font-semibold text-white shadow hover:bg-violet-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="inline-flex w-full items-center justify-center rounded-xl bg-amber-500 px-4 py-3 text-[15px] font-semibold text-white shadow hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? "กำลังดำเนินการ..." : "ยอมรับข้อตกลง"}
               </button>

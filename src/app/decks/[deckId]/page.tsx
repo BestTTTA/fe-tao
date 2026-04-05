@@ -44,10 +44,10 @@ export default async function DeckDetailPage({
 
   const profileRes = uid
     ? await supabase
-        .from("profiles")
-        .select("plan_type, plan_status, plan_current_period_end")
-        .eq("id", uid)
-        .maybeSingle()
+      .from("profiles")
+      .select("plan_type, plan_status, plan_current_period_end")
+      .eq("id", uid)
+      .maybeSingle()
     : { data: null };
 
   const isPremium = hasPremiumAccess(getUserTier(profileRes.data));
@@ -74,8 +74,8 @@ export default async function DeckDetailPage({
   }
 
   return (
-    <main className="min-h-screen text-white">
-      <div className="mx-auto max-w-md px-4 pb-24 pt-6">
+    <main className="min-h-screen text-white ">
+      <div className="mx-auto max-w-md px-4 pb-24 pt-6 ">
         {/* Header */}
         <TransparentHeader
           title={deck.deck_name}
@@ -87,13 +87,14 @@ export default async function DeckDetailPage({
               showMenu: false,
               showBack: true,
               backPath: "/",
+              showTextTitle: true,
             },
           }}
         />
 
         {/* Deck hero */}
         <div className="mt-14 rounded-2xl border border-white/10 bg-white p-3">
-          
+
 
           <TarotCarousel
             images={
@@ -113,26 +114,21 @@ export default async function DeckDetailPage({
 
           <div className="mt-3">
             <h2 className="text-[20px] font-semibold text-black">{deck.deck_name}</h2>
-            {deck.detail && (
-              <p className="mt-1 text-thin text-black whitespace-pre-line">{deck.detail}</p>
+            <p className="mt-1 text-thin text-black whitespace-pre-line">{deck.detail}</p>
+            {!deck.free && (
+              <Link
+                href="/packages"
+                className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-violet-900 px-4 py-2 text-[13px] font-normal text-white hover:bg-violet-800"
+              >
+                สมัคร VIP
+              </Link>
             )}
           </div>
         </div>
 
         {/* Content by permission */}
         {!canSeeCards ? (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 shadow backdrop-blur">
-            <p className="text-sm text-white/80">
-              เด็คนี้สงวนสิทธิ์สำหรับสมาชิก VIP เท่านั้น
-              สมัครเพื่อดูรายละเอียดไพ่ทั้งหมดได้ไม่จำกัด
-            </p>
-            <Link
-              href="/packages"
-              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-violet-700 px-4 py-3 text-[15px] font-semibold text-white hover:bg-violet-800"
-            >
-              สมัคร VIP
-            </Link>
-          </div>
+          <></>
         ) : (
           <section className="mt-4 space-y-3 ">
             {cards.map((c, i) => (
@@ -141,11 +137,11 @@ export default async function DeckDetailPage({
                 href={`/decks/${deck.id}/cards/${c.id}`}
                 className="flex gap-3 rounded-2xl bg-white p-3"
               >
-                <div className="h-20 w-14 flex-none">
+                <div className="h-26 w-16 flex-none">
                   <ImageWithLoader
                     src={toPublicUrl(c.card_url) || "/placeholder-card.jpg"}
                     alt={c.card_name}
-                    className="h-20 w-14 rounded-[10px]"
+                    className="h-24 w-16 rounded-[4px]"
                   />
                 </div>
                 <div className="min-w-0 flex-1">

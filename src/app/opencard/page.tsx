@@ -155,8 +155,14 @@ export default function OpenCardPage() {
 
   const listToShow = useMemo(() => {
     const list = decks.map((d) => ({ ...d, favorite: favDeckIds.has(d.id) }));
-    return tab === "fav" ? list.filter((d) => d.favorite) : list;
-  }, [tab, decks, favDeckIds]);
+    const filtered = tab === "fav" ? list.filter((d) => d.favorite) : list;
+    // ถ้าไม่ได้เป็น VIP เต็ม (basic หรือ trial 30 วัน) ให้ deck ฟรีขึ้นก่อนเสมอ
+    // เฉพาะ VIP จ่ายเงินเท่านั้นที่เรียงตามปกติ
+    if (userTier !== "vip") {
+      return [...filtered].sort((a, b) => Number(a.vipOnly) - Number(b.vipOnly));
+    }
+    return filtered;
+  }, [tab, decks, favDeckIds, userTier]);
 
   // ✅ ใหม่: handler ตอนกด "ดูดวง"
   // ขั้นตอน:
@@ -343,10 +349,12 @@ function DeckCard({
   return (
     <div className="overflow-hidden rounded-2xl bg-white/95 p-2 text-slate-900 shadow ring-1 ring-black/5 backdrop-blur">
       <div className="relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={deck.image || "/placeholder-deck.jpg"}
           alt={deck.name}
-          className="h-48 w-full rounded-xl object-contain"
+          className="h-48 w-full rounded-xl object-contain cursor-pointer"
+          onClick={onInfo}
         />
 
         {/* Favorite */}
@@ -372,7 +380,7 @@ function DeckCard({
         <div className="mt-2 flex items-center gap-2">
           <button
             onClick={onInfo}
-            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.95] active:bg-slate-100 transition-transform"
           >
             {t.openCard.viewInfo}
           </button>
@@ -380,10 +388,10 @@ function DeckCard({
           <button
             onClick={onRead}
             disabled={disabled}
-            className={`relative inline-flex flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow ${
+            className={`relative inline-flex flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow transition-transform ${
               disabled
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-botton-main hover:bg-violet-800"
+                : "bg-botton-main hover:bg-violet-800 active:scale-[0.95] active:brightness-90"
             }`}
           >
             {buttonLabel}

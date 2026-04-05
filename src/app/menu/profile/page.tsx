@@ -179,8 +179,8 @@ export default function AccountProfilePage() {
 
       {/* Header */}
       <TransparentHeader
-        title="TAROT"
-        subtitle="& ORACLE"
+        title={t.profile.title}
+        subtitle=""
         routeRules={{
           "/menu/profile": {
             showLogo: false,
@@ -188,19 +188,19 @@ export default function AccountProfilePage() {
             showMenu: true,
             showBack: true,
             rightAction: "edit",
+            showTextTitle: true
           },
         }}
       />
 
       {/* พื้นหลัง hero */}
       <section
-        className="relative h-[210px] w-full overflow-hidden"
+        className="relative h-[170px] w-full overflow-hidden"
 
       />
 
       {/* เนื้อหา */}
       <div className="relative -mt-16 mx-auto max-w-md px-4 pb-24 text-white">
-        <h1 className="mb-3 text-2xl font-extrabold">{t.profile.title}</h1>
 
         <div className="overflow-hidden rounded-3xl bg-white/95 p-5 text-slate-900 shadow-lg ring-1 ring-black/5 backdrop-blur">
           {/* Avatar */}
@@ -239,7 +239,7 @@ export default function AccountProfilePage() {
           <Divider />
 
           {/* รายละเอียด */}
-          <Field label={t.profile.stripeId} value={user.stripe_customer_id ?? "-"} />
+          <Field label={t.profile.stripeId} value={user.id ?? "-"} />
           <Field label={t.profile.fullName} value={user.full_name ?? "-"} />
           <Field label={t.profile.nickname} value={user.nick_name ?? "-"} />
           <Field label={t.profile.phone} value={user.phone ?? "-"} />
@@ -278,12 +278,26 @@ function PlanSection({
   const tier = getUserTier(user)
   const { t } = useLanguage()
 
+  const isMonthly = tier === "vip" && user.plan_type === "MONTH"
+  const isYearly = tier === "vip" && user.plan_type === "YEAR"
+
   const planLabel =
-    tier === "vip"
-      ? user.plan_type === "MONTH" ? t.packages.vipMonthly : t.packages.vipYearly
+    isMonthly
+      ? t.profile.planMonthly
+    : isYearly
+      ? t.profile.planYearly
     : tier === "trial"
-      ? t.profile.trial30
-    : t.profile.freemium
+      ? t.profile.planTrial
+    : t.profile.planBasic
+
+  const badgeLabel =
+    isMonthly
+      ? t.profile.badgeMonthly
+    : isYearly
+      ? t.profile.badgeYearly
+    : tier === "trial"
+      ? t.profile.badgeTrial
+    : null
 
   const expiryDate =
     (tier === "vip" || tier === "trial") && user.plan_current_period_end
@@ -302,10 +316,8 @@ function PlanSection({
         )}
       </div>
       {tier !== "basic" ? (
-        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${
-          tier === "vip" ? "bg-amber-400 text-amber-900" : "bg-violet-200 text-[#361B62]"
-        }`}>
-          {tier === "vip" ? t.profile.vip : t.profile.trial}
+        <span className="rounded-md bg-amber-400 px-3 py-1.5 text-xs font-bold text-slate-900">
+          {badgeLabel}
         </span>
       ) : (
         <button
@@ -367,7 +379,6 @@ function PenIcon() {
       stroke="currentColor"
       strokeWidth="2"
     >
-      <path d="M12 20h9" />
       <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
     </svg>
   );

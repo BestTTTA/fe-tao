@@ -157,7 +157,7 @@ export default async function DeckDetailPage({
                       {c.describe}
                     </div>
                   )}
-                  <div className="mt-1 flex items-center gap-1 text-[12px] font-medium text-gray-600">
+                  <div className="mt-5 flex items-center gap-1 text-[12px] font-medium text-gray-600">
                     <span>อ่านต่อ</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
                   </div>
